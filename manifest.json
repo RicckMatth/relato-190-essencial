@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Relato 190 — Essencial + Endereços",
+  "version": "5.6.3",
+  "description": "Cópia em um clique, Google Maps, conferência de CEP e perfis de campos. Consultas externas somente após consentimento.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "clipboardWrite",
+    "tabs"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Abrir ou fechar Relato 190 Essencial",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "host_permissions": [
+    "https://viacep.com.br/*",
+    "https://brasilapi.com.br/*",
+    "https://servicodados.ibge.gov.br/*"
+  ]
+}

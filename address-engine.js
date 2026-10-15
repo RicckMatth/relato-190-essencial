@@ -1,0 +1,13 @@
+/* Comparador local de nomes: sugestões, nunca confirmação cadastral. */
+(function(root){
+'use strict';
+function clean(v){return String(v??'').replace(/\s+/g,' ').trim().slice(0,160);}
+function norm(v){return clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\b(r\.?|rua|avenida|av\.?|travessa|tv\.?)\b/g,' ').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();}
+function sound(v){return norm(v).replace(/ph/g,'f').replace(/lh/g,'i').replace(/nh/g,'n').replace(/ch/g,'x').replace(/ss|ç/g,'s').replace(/[ckq]/g,'k').replace(/gu(?=[ei])/g,'g').replace(/g(?=[ei])/g,'j').replace(/z/g,'s').replace(/y/g,'i').replace(/(.)\1+/g,'$1').replace(/\s/g,'');}
+function dist(a,b,cut=30){let l=a.length,m=b.length;if(Math.abs(l-m)>cut)return cut+1;if(l>m){[a,b]=[b,a];[l,m]=[m,l];}let p=Array.from({length:l+1},(_,i)=>i);for(let j=1;j<=m;j++){let next=[j],min=j;for(let i=1;i<=l;i++){const d=Math.min(next[i-1]+1,p[i]+1,p[i-1]+(a[i-1]===b[j-1]?0:1));next.push(d);min=Math.min(min,d);}if(min>cut)return cut+1;p=next;}return p[l];}
+function score(query,candidate){let a=norm(query),b=norm(candidate);if(!a||!b)return -1;if(a===b)return 100;if(b.startsWith(a))return 90-Math.min(15,b.length-a.length)/5;if(a.length>=4&&b.includes(a))return 78;const as=sound(query),bs=sound(candidate);if(as===bs)return 88;const d=dist(a,b,Math.max(4,Math.floor(Math.max(a.length,b.length)*.42)));let s=72-90*d/Math.max(a.length,b.length);if(a.split(' ').some(word=>word.length>=4&&b.split(' ').includes(word)))s+=8;const sd=dist(as,bs,3);if(sd<=2)s=Math.max(s,78-8*sd);return Math.max(0,Math.round(s));}
+function rank(query,candidates,limit=7){const unique=new Map();for(const item of candidates||[]){const name=typeof item==='string'?item:String(item?.name||item?.logradouro||item?.label||'');const key=norm(name);if(!key||unique.has(key))continue;const rating=score(query,name);if(rating>=42)unique.set(key,{name,score:rating,record:item});}return [...unique.values()].sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name,'pt-BR')).slice(0,limit);}
+function cep(v){return String(v??'').replace(/\D/g,'').slice(0,8);}
+function differences(address,record){const result=[];for(const [field,prop,label] of [['cidade','cidade','Município'],['rua','rua','Logradouro'],['bairro','bairro','Bairro']]){const src=clean(address?.[field]),dest=clean(record?.[prop]);if(!src||!dest)continue;const sim=score(src,dest);if(sim<80)result.push({field,label,digitado:src,referencia:dest});}return result;}
+root.Relato190Address={clean,norm,sound,dist,score,rank,cep,differences};
+})(typeof globalThis!=='undefined'?globalThis:this);

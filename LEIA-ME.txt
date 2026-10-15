@@ -1,0 +1,28 @@
+RELATO 190 — ESSENCIAL v5.6.3 | GUIA DE TESTE
+
+1. Carregue a pasta relato-190-essencial em chrome://extensions (modo desenvolvedor).
+   Para atualizar sem perder vínculos, substitua os arquivos na MESMA pasta/ID e clique em Atualizar.
+2. Abra teste-atendimento.html ou uma página de testes autorizada. Em arquivos locais, habilite Acesso a URLs de arquivo na extensão.
+3. Abra Configurações (engrenagem) e vincule nome, telefone, cidade, rua, número, bairro, complemento e texto principal. CEP é opcional e NÃO entra na cópia.
+4. Salve um perfil com nome, clique em Aplicar para recuperar as referências; o reconhecimento automático só atua quando ao menos três vínculos e o campo principal forem resolvidos unicamente.
+5. Em Endereço inteligente, sugestões locais simples são mostradas sem transmitir nada. Habilite explicitamente a consulta externa para pesquisa online.
+6. ViaCEP: pesquisa por UF+cidade+trecho da rua e por CEP, quando fornecido. BrasilAPI: alternativa para conferir o CEP. IBGE: nomes de municípios. Uma resposta pode falhar ou estar incompleta. Nenhuma dessas fontes confirma numeração de imóvel.
+7. Clique em Abrir Street View. Quando houver coordenadas válidas de CEP ou da posição visível no Google Maps, a extensão solicita a abertura de uma panorâmica próxima. Caso contrário, indica que é necessário selecionar um local no Google Maps antes de tentar novamente. O centro do mapa não confirma o número da casa.
+8. Nome, telefone e relato não são enviados às APIs. Campos digitados e resultados de atendimento não são gravados em storage; apenas os vínculos e perfis são guardados. A preferência de consulta online só vale enquanto o painel está aberto/injetado na página.
+9. O Google Maps é aberto somente após ação do usuário. Autorize institucionalmente o uso antes de inserir endereços operacionais reais em serviços externos.
+
+LIMITES: CEP não identifica o imóvel; sugestão de rua não é verificação de número; imagens Street View podem estar antigas. Extensões não conseguem controlar todos os formulários/iframes de forma garantida. Sempre confira o endereço no sistema oficial.
+
+CORREÇÕES 5.6.1: o CEP consultado é mostrado em cartão visível, com rua, bairro, município, fontes, divergências e botão para aplicar somente mediante confirmação. A consulta por CEP completo pode ocorrer sem rua/cidade, após autorização e pausa. Street View não afirma sucesso quando só há uma busca no Maps e tenta obter coordenadas do Google Maps aberto.
+
+NOVIDADES 5.6.2:
+- Na barra pequena abaixo do campo principal, segure o botão ⠿ e arraste até o local desejado. A posição fica salva por página; os valores dos atendimentos nunca são salvos.
+- Clique ↩ para reencaixar a barra automaticamente abaixo do campo. O arraste não muda o texto nem interfere nas ações de cópia.
+- Street View: removida a leitura do centro da câmera e a tentativa de abrir panoramas por coordenadas aproximadas de CEP. O botão foca o Google Maps e orienta abrir manualmente uma panorâmica de rua escolhida; a sincronização automática é pausada para preservar essa escolha. Uma panorâmica exata por URL exigiria identificador confiável de panorama/coordenadas do imóvel, não disponível nesta integração.
+
+
+CORREÇÕES 5.6.3:
+- Street View volta a tentar abrir panorâmica por URL oficial, a partir de coordenadas obtidas do CEP (quando existentes) ou do centro da área mostrada no Google Maps. Essas coordenadas NÃO são garantia de localização do número e podem levar a panorama distante ou indisponível.
+- A sincronização automática do Google Maps continua ativa após Street View, mas só troca a vista quando cidade, rua, número ou bairro mudarem. A opção Pausar atualização permanece manual.
+- Campos de CEP não causam recarregamentos do Google Maps sem alteração do endereço. O botão Atualizar pesquisa permite forçar a atualização.
+- Mantidas a barra arrastável, as posições salvas, o reencaixe e a cópia em um clique.
