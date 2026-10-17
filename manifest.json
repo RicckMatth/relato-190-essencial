@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Relato 190 — Essencial + Endereços",
-  "version": "5.9.2",
+  "version": "5.9.3",
   "description": "Relato 190: SADE, sugestões de municípios do Paraná, CAPS, revisão opcional Gemini e histórico temporário protegido.",
   "permissions": [
     "activeTab",

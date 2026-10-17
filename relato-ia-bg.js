@@ -56,10 +56,18 @@
    }
    case 'R190_KEY_SAVE':{
     const key=String(m.key||'').trim();
-    if(!/^AIza[\w-]{20,}$/.test(key))throw Error('Chave Gemini inválida.');
+    // Google AI Studio aceita chaves legadas (AIza) e novas chaves de autenticação (AQ.).
+    // Não inferir a validade somente pelo prefixo: o teste real é feito no endpoint.
+    if(key.length<20||key.length>256||!/^[A-Za-z0-9._-]+$/.test(key))
+     throw Error('Formato incompatível. Copie a chave completa do Google AI Studio.');
     await chrome.storage.local.set({[KEY]:await seal(key,'gemini')});return {saved:true};
    }
    case 'R190_KEY_REMOVE':await chrome.storage.local.remove(KEY);return {saved:true};
+   case 'R190_KEY_TEST':{
+    // Somente uma frase fictícia; nenhum dado do SADE é consultado ou enviado.
+    const r=await run({type:'R190_GEMINI',confirmed:true,text:'Teste de conexão. Responda apenas: OK.'});
+    return {connected:!!r.text};
+   }
    case 'R190_GEMINI':{
     if(m.confirmed!==true)throw Error('Confirmação de envio necessária.');
     const d=(await chrome.storage.local.get(KEY))[KEY];
@@ -74,7 +82,16 @@
       credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal,
       body:JSON.stringify({systemInstruction:{parts:[{text:'Revise o relato em português somente quanto a ortografia, pontuação, clareza e organização. Preserve integralmente fatos, pessoas, locais, horários, incertezas e negativas. Não acrescente nem remova informações. Retorne só o texto revisado.'}]},contents:[{role:'user',parts:[{text:input}]}],generationConfig:{temperature:0.1,maxOutputTokens:4096}})
      });
-     if(!response.ok)throw Error('Gemini retornou HTTP '+response.status+'. Confira chave, cota e permissões.');
+     if(!response.ok){
+      const errors={
+       400:'Requisição inválida para o Gemini (HTTP 400).',
+       401:'O Google não autenticou a chave (HTTP 401). Confira se está ativa e vinculada ao projeto correto no AI Studio.',
+       403:'Chave sem permissão para esta operação (HTTP 403). Confira restrições e acesso ao modelo.',
+       404:'Modelo Gemini indisponível para esta chave (HTTP 404).',
+       429:'Cota ou limite de requisições do Gemini excedido (HTTP 429).'
+      };
+      throw Error(errors[response.status]||'Gemini retornou HTTP '+response.status+'. Verifique o serviço.');
+     }
      const data=await response.json();
      const text=(data.candidates||[]).flatMap(x=>x.content?.parts||[]).map(x=>x.text||'').join('\n').trim();
      if(!text)throw Error('O Gemini não retornou texto.');

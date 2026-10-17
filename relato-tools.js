@@ -71,7 +71,8 @@
  settings.innerHTML='<h3>Ferramentas CAPS, Gemini e histórico</h3>'
  +'<p class="r190Warning">A chave Gemini fica criptografada localmente. Após salvar, não é necessário informar senha a cada consulta. Cada envio de texto exige confirmação.</p>'
  +'<label>Chave Gemini API <input type="password" id="r190ApiKey" autocomplete="off" placeholder="Cole sua chave Gemini"></label>'
- +'<button type="button" id="r190SaveKey">Salvar chave</button><button type="button" id="r190DeleteKey">Apagar chave</button>'
+ +'<button type="button" id="r190SaveKey">Salvar chave</button><button type="button" id="r190TestKey">Testar conexão</button><button type="button" id="r190DeleteKey">Apagar chave</button>'
+ +'<p class="r190Warning">Aceita chaves padrão AIza e chaves de autenticação AQ. Salvar não garante funcionamento: use Testar conexão, que envia apenas uma mensagem fictícia.</p>'
  +'<p id="r190KeyStatus" aria-live="polite"></p>'
  +'<label><input type="checkbox" id="r190HistoryOn"> Habilitar histórico automático ao clicar em Gerar Ocorrência</label>'
  +'<p class="r190Warning">O histórico pode conter dados pessoais. Habilite apenas com autorização da instituição. '+MSG+'</p>'
@@ -123,6 +124,15 @@
  $('r190SaveKey').addEventListener('click',async()=>{
   try{await api('R190_KEY_SAVE',{key:$('r190ApiKey').value});$('r190ApiKey').value='';await status();note('Chave criptografada e salva.');}
   catch(e){note('Chave não salva: '+e.message);}
+ });
+ $('r190TestKey').addEventListener('click',async()=>{
+  const button=$('r190TestKey'),statusEl=$('r190KeyStatus');
+  button.disabled=true;statusEl.textContent='Verificando conexão com o Gemini... Aguarde.';
+  try{
+   const result=await api('R190_KEY_TEST');
+   statusEl.textContent=result.connected?'Conexão verificada: Gemini respondeu ao teste.':'O Gemini não retornou conteúdo no teste.';
+  }catch(e){statusEl.textContent='Falha na conexão: '+e.message;}
+  finally{button.disabled=false;}
  });
  $('r190DeleteKey').addEventListener('click',async()=>{
   if(!confirm('Apagar a chave Gemini desta instalação?'))return;

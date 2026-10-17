@@ -2,7 +2,7 @@
 
 > Extensão para Google Chrome que agiliza atendimentos do **190** com cópia em um clique, integração com Google Maps, conferência inteligente de endereços e sugestões por CEP.
 
-[![Versão](https://img.shields.io/badge/versão-5.9.2-0a7a6e?style=flat-square)](https://github.com/RicckMatth/relato-190-essencial/tree/master)
+[![Versão](https://img.shields.io/badge/versão-5.9.3-0a7a6e?style=flat-square)](https://github.com/RicckMatth/relato-190-essencial/tree/master)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square&logo=google-chrome)](https://developer.chrome.com/docs/extensions/mv3/)
 [![Licença](https://img.shields.io/badge/licença-MIT-green?style=flat-square)](LICENSE)
 
@@ -12,7 +12,7 @@
 
 **[⬇ Baixar última versão (ZIP)](https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip)**
 
-> O link baixa a versão mais recente do código na branch `master` (atualmente **v5.9.2**), não o release antigo v5.6.3. Após baixar, siga as instruções de instalação abaixo.
+> O link baixa a versão mais recente do código na branch `master` (atualmente **v5.9.3**), não o release antigo v5.6.3. Após baixar, siga as instruções de instalação abaixo.
 
 ---
 
@@ -85,6 +85,16 @@ Depois siga os passos 3–6 acima, selecionando a pasta clonada.
 ---
 
 ## 📋 Histórico de versões
+
+### v5.9.3 — Chaves Gemini e teste de conexão
+
+- Corrige a validação da chave de API Gemini: agora aceita o formato antigo `AIza...` e o novo formato de autenticação `AQ....` criado pelo Google AI Studio. Não depende do prefixo para declarar validade.
+- Botão **Testar conexão** em Configurações → Gemini: envia somente uma frase fictícia ao modelo (nunca dados de atendimento) e informa se o Google respondeu.
+- Diferencia falhas de autenticação (401), permissão (403), modelo (404) e cota (429). Salvar a chave não comprova a autenticação.
+- **Download da última versão:** https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip
+- Credenciais nunca devem ser copiadas para o repositório ou registradas no console. Se foram divulgadas, revogue-as e gere novas.
+
+
 
 ### v5.7.0 (atual)
 - **Reconhecimento automático do SADE**: adaptador `sade-adapter.js` com heurísticas de alta precisão para os 9 campos de atendimento: Nome, Telefone, Município, Rua, Número, Bairro, Complemento, Relato (texto principal) e CEP
