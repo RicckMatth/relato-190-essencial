@@ -147,3 +147,13 @@ A extensão inclui um ambiente de simulação completo reproduzindo a arquitetur
 ## 📄 Licença
 
 MIT © 2024 — Uso institucional. Consulte os termos de uso do ViaCEP, BrasilAPI e IBGE antes de utilizar em produção.
+
+
+### v5.9.2 — Ferramentas e correção de municípios
+
+- Sugestões de municípios com catálogo completo do Paraná obtido do IBGE, com fallback local que inclui Pato Branco (ex.: `Pato` → `Pato Branco`).
+- Barra de ferramentas: CAPS para converter o relato principal em maiúsculas; IA com confirmação explícita antes de enviar texto ao Gemini e indicador de carregamento.
+- Chave Gemini guardada criptografada com AES-GCM e chave não exportável no IndexedDB da extensão; não pede senha a cada uso. A proteção depende da segurança do perfil do navegador e não impede acesso por quem controla o perfil desbloqueado.
+- Resultado do Gemini em caixa independente; botão **Mesclar** modifica o relato apenas após confirmação, e somente se o texto original não foi alterado.
+- Histórico automático **desligado por padrão**, habilitável nas configurações após autorização institucional. Registros cifrados expiram após 1 hora e a extensão impede a consulta após o prazo; backups e armazenamento do sistema operacional não têm eliminação física garantida.
+- Não são enviadas ocorrências a serviços externos sem ação e confirmação explícitas. Teste primeiro em simulador, sem dados reais.

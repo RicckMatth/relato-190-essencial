@@ -28,7 +28,12 @@
   let sadeBindings = {};   // { key: description } — descrições geradas pelo adaptador
   const SADE_EVENT_OUT = 'relato190:sade:status';
   const SADE_EVENT_IN  = 'relato190:sade:command';
-  const municipalityFallback=['Colombo','Curitiba','Pinhais','São José dos Pinhais','Almirante Tamandaré','Campina Grande do Sul','Araucária','Piraquara','Campo Largo','Fazenda Rio Grande','Quatro Barras','Paranaguá','Londrina','Maringá','Cascavel','Ponta Grossa','Guarapuava','Foz do Iguaçu'];
+  const municipalityFallback=globalThis.RelatoPRMunicipios||['Pato Branco','Curitiba','Colombo'];
+  function municipalityNames(){
+    const current=globalThis.RelatoPRMunicipios||municipalityFallback;
+    const live=(recentLookup?.results?.municipios||[]).map(x=>x.nome).filter(Boolean);
+    return [...new Set([...current,...live])];
+  }
   const observed = new WeakSet(), inserted = new WeakMap();
   const host = document.createElement('div');
   host.id = 'relato190-essencial-root';
@@ -467,7 +472,7 @@
         if(addressPopup.visible&&addressPopup.targetEl===target)addressPopup.hide();
         return;
       }
-      const municipios=recentLookup?.results?.municipios?.map(x=>x.nome)||municipalityFallback;
+      const municipios=municipalityNames();
       const cityMatches=matcher.rank(val,municipios,3).filter(x=>x.score>=60&&matcher.norm(x.name)!==matcher.norm(val));
       if(cityMatches.length>0){
         addressPopup.show(target,cityMatches.map(item=>({
@@ -754,7 +759,7 @@
   function showSuggestions(){
     renderCepResult();
     const holder=$('#lookupSuggestions');holder.replaceChildren();
-    const a=getAddress(),municipios=recentLookup?.results?.municipios?.map(x=>x.nome)||municipalityFallback;
+    const a=getAddress(),municipios=municipalityNames();
     const cityMatches=matcher.rank(a.cidade,municipios,3).filter(x=>x.score>=60&&matcher.norm(x.name)!==matcher.norm(a.cidade));
     // Configuração v5.8.0 solicitada: a indicação de município parecido aparece em POPUP NA TELA e NÃO na extensão!
     if(cityMatches.length>0&&addressPopup){
@@ -1085,6 +1090,10 @@
   window.addEventListener('resize',()=>{updateToolbar();if(addressPopup&&addressPopup.visible)addressPopup.reposition();});
   window.addEventListener('scroll',()=>{updateToolbar();if(addressPopup&&addressPopup.visible)addressPopup.reposition();},true);
   document.addEventListener('input',onFieldInput,true);
+  window.addEventListener('relato190:municipios-ready',()=>{
+    const el=findFieldElement('cidade');
+    if(el&&String(el.value||'').trim().length>=3)handleFieldSuggestion('cidade',el);
+  });
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&selecting)stopSelecting(true);},true);
   function checkAddressChanges(){
     if(mapsActive){

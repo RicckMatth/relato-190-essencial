@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Relato 190 — Essencial + Endereços",
-  "version": "5.8.0",
-  "description": "Cópia em um clique, Google Maps, conferência de CEP, perfis de campos, reconhecimento automático do SADE e sugestões de endereço com HERE Technologies. Consultas externas somente após consentimento.",
+  "version": "5.9.2",
+  "description": "Relato 190: SADE, sugestões de municípios do Paraná, CAPS, revisão opcional Gemini e histórico temporário protegido.",
   "permissions": [
     "activeTab",
     "scripting",
     "storage",
     "clipboardWrite",
-    "tabs"
+    "tabs",
+    "alarms"
   ],
   "background": {
     "service_worker": "background.js"
@@ -31,6 +32,7 @@
     "https://brasilapi.com.br/*",
     "https://servicodados.ibge.gov.br/*",
     "https://*.hereapi.com/*",
-    "https://*.search.hereapi.com/*"
+    "https://*.search.hereapi.com/*",
+    "https://generativelanguage.googleapis.com/*"
   ]
 }

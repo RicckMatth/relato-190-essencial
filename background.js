@@ -1,5 +1,5 @@
 'use strict';
-importScripts('bindings.js','address-engine.js');
+importScripts('bindings.js','address-engine.js','relato-ia-bg.js');
 // sade-adapter.js é injetado como content script junto ao content.js (não precisa de importScripts)
 const store=RelatoAgilBindings.server(chrome);
 const injecting=new Set();
@@ -177,6 +177,11 @@ async function openStreetView(sourceId,address,coordinates){
  return {opened:true,panorama:true,reason:'Street View solicitado para um panorama próximo. '+origin+'. A imagem pode estar distante do imóvel ou indisponível; confirme no Maps.'};
 }
 chrome.runtime.onMessage.addListener((message,sender,reply)=>{
+ if(message?.type==='RELATO_PR_MUNICIPIOS'){
+  if(sender.id!==chrome.runtime.id||!Number.isInteger(sender.tab?.id)){reply({ok:false,error:'Origem não autorizada.'});return false;}
+  municipiosPR().then(names=>reply({ok:true,names})).catch(()=>reply({ok:false,error:'Catálogo do IBGE indisponível.'}));return true;
+ }
+
  if(message?.type?.startsWith('RELATO_MAPS_')||message?.type==='RELATO_LOOKUP_ADDRESS'){
   if(sender.id!==chrome.runtime.id||!Number.isInteger(sender.tab?.id)){reply({ok:false,error:'Origem não autorizada.'});return false;}
   const sourceId=sender.tab.id;
@@ -201,7 +206,7 @@ async function open(tabId,automatic=false){
  try{
   if(automatic)await chrome.scripting.executeScript({target:{tabId},func:()=>{window.__relatoEssencialAutomatic=true;}});
   // Injetar módulos de tema, serviço HERE, popup e adaptador SADE antes do content.js
-  await chrome.scripting.executeScript({target:{tabId},files:['bindings.js','address-engine.js','sade-theme.js','here-service.js','address-popup.js','sade-adapter.js','content.js']});
+  await chrome.scripting.executeScript({target:{tabId},files:['bindings.js','address-engine.js','sade-theme.js','here-service.js','address-popup.js','sade-adapter.js','municipios-pr.js','content.js','relato-tools.js']});
   await chrome.action.setBadgeText({tabId,text:''});
  }finally{injecting.delete(tabId);}
 }
