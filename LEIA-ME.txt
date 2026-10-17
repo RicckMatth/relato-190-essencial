@@ -1,4 +1,4 @@
-RELATO 190 — ESSENCIAL v5.6.3 | GUIA DE TESTE
+RELATO 190 — ESSENCIAL v5.7.0 | GUIA DE TESTE E RECONHECIMENTO SADE
 
 1. Carregue a pasta relato-190-essencial em chrome://extensions (modo desenvolvedor).
    Para atualizar sem perder vínculos, substitua os arquivos na MESMA pasta/ID e clique em Atualizar.
@@ -26,3 +26,12 @@ CORREÇÕES 5.6.3:
 - A sincronização automática do Google Maps continua ativa após Street View, mas só troca a vista quando cidade, rua, número ou bairro mudarem. A opção Pausar atualização permanece manual.
 - Campos de CEP não causam recarregamentos do Google Maps sem alteração do endereço. O botão Atualizar pesquisa permite forçar a atualização.
 - Mantidas a barra arrastável, as posições salvas, o reencaixe e a cópia em um clique.
+
+NOVIDADES 5.7.0:
+- Reconhecimento automático dos campos de atendimento do SADE (sade-adapter.js) dentro de iframes dinâmicos (#iframeContainer e iframe[name="container"]).
+- Reconhece os 9 campos obrigatórios: Nome, Telefone, Município, Rua, Número, Bairro, Complemento, Relato (texto principal) e CEP. O número sempre antecede o bairro na montagem da cópia.
+- O campo de relato (destino) é protegido e nunca confundido com observações, histórico, caixas de pesquisa ou filtros. Vínculos circulares são estritamente impedidos.
+- Suporte a formulários reativos/AJAX via MutationObserver, re-mapeando automaticamente quando a tela ou o formulário interno é substituído dinamicamente.
+- Prioridade transparente de vínculos: (1) SADE automático, (2) Perfil salvo compatível, (3) Assistente manual. O operador pode confirmar ou alterar qualquer vínculo individualmente.
+- Novo simulador de testes com arquitetura SADE: teste-sade.html. Execute também as suítes automatizadas via "node test_sade_suite.js" e "node chrome_test.js".
+- Privacidade preservada: nenhuma credencial ou dado de ocorrência é lido/salvo; nenhuma submissão automática é realizada.

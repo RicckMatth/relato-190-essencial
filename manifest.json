@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Relato 190 — Essencial + Endereços",
-  "version": "5.6.3",
-  "description": "Cópia em um clique, Google Maps, conferência de CEP e perfis de campos. Consultas externas somente após consentimento.",
+  "version": "5.7.0",
+  "description": "Cópia em um clique, Google Maps, conferência de CEP, perfis de campos e reconhecimento automático do SADE. Consultas externas somente após consentimento.",
   "permissions": [
     "activeTab",
     "scripting",

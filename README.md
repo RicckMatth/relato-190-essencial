@@ -2,7 +2,7 @@
 
 > Extensão para Google Chrome que agiliza atendimentos do **190** com cópia em um clique, integração com Google Maps, conferência inteligente de endereços e sugestões por CEP.
 
-[![Versão](https://img.shields.io/badge/versão-5.6.3-0a7a6e?style=flat-square)](https://github.com/RicckMatth/relato-190-essencial/releases/latest)
+[![Versão](https://img.shields.io/badge/versão-5.7.0-0a7a6e?style=flat-square)](https://github.com/RicckMatth/relato-190-essencial/releases/latest)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square&logo=google-chrome)](https://developer.chrome.com/docs/extensions/mv3/)
 [![Licença](https://img.shields.io/badge/licença-MIT-green?style=flat-square)](LICENSE)
 
@@ -20,7 +20,8 @@
 
 | Recurso | Descrição |
 |---|---|
-| **Cópia em um clique** | Copia nome · telefone · endereço · relato em um toque, formatado com separador configurável |
+| **Reconhecimento SADE** | Reconhece e vincula automaticamente os 9 campos de atendimento do sistema SADE dentro de iframes dinâmicos |
+| **Cópia em um clique** | Copia nome · telefone · cidade · rua · número · bairro · complemento · relato em um toque, formatado em caixa alta com separador `-` ou `\|` |
 | **Google Maps integrado** | Abre e atualiza o Maps automaticamente conforme o endereço é preenchido |
 | **Street View** | Tenta abrir panorâmica próxima por coordenadas de CEP ou posição atual do Maps |
 | **Endereço inteligente** | Compara rua, bairro e cidade com fontes públicas (ViaCEP, BrasilAPI, IBGE) |
@@ -28,7 +29,7 @@
 | **Sugestões de rua/bairro** | Detecta erros de digitação em rua e bairro e sugere o nome correto com botão "Usar" |
 | **Perfis de campos** | Salva e recupera vínculos de campos por site; reconhecimento automático de perfis compatíveis |
 | **Barra arrastável** | Mini-barra flutuante reposicionável abaixo do campo principal |
-| **Privacidade** | Nenhum dado de ocorrência é armazenado; consultas externas só com autorização explícita |
+| **Privacidade estrita** | Nenhum dado de ocorrência é armazenado; sem submissão automática; consultas externas só com autorização explícita |
 
 ---
 
@@ -83,7 +84,16 @@ Depois siga os passos 3–6 acima, selecionando a pasta clonada.
 
 ## 📋 Histórico de versões
 
-### v5.6.3 (atual)
+### v5.7.0 (atual)
+- **Reconhecimento automático do SADE**: adaptador `sade-adapter.js` com heurísticas de alta precisão para os 9 campos de atendimento: Nome, Telefone, Município, Rua, Número, Bairro, Complemento, Relato (texto principal) e CEP
+- Suporte nativo à arquitetura do SADE com **iframes dinâmicos** (`#iframeContainer` e `iframe[name="container"]`), `contentDocument` e `MutationObserver` para alterações assíncronas via jQuery/AJAX
+- **Precedência estrita de vínculos**: (1) Mapeamento nativo SADE validado -> (2) Perfil salvo compatível -> (3) Assistente manual
+- **Painel visual SADE**: status discreto na barra principal (`SADE reconhecido`, `Aguardando formulário`, etc.) e seção detalhada em Configurações com badges de estado por campo (`Automático`, `Confirmar`, `Não encontrado`)
+- **Proteção de destino e idempotência**: exclusão explícita de caixas de observações, histórico, buscas e filtros do campo de relato; cliques repetidos preservam o texto sem duplicação de cabeçalhos
+- Suporte a simulador de teste (`teste-sade.html`) e suíte de testes automatizados (`test_sade_suite.js` e `chrome_test.js`)
+- **Segurança estrita**: sem coleta de credenciais, sem leitura de cookies/tokens, sem submissão automática
+
+### v5.6.3
 - Street View abre panorâmica por URL oficial usando coordenadas de CEP ou centro do Maps
 - Sincronização do Maps continua ativa após Street View sem sobrescrever a panorâmica
 - Busca de rua usa **todos os tokens** do logradouro em paralelo no ViaCEP (mais resistente a erros de digitação)
@@ -97,6 +107,25 @@ Depois siga os passos 3–6 acima, selecionando a pasta clonada.
 ### v5.6.1
 - Cartão de CEP com rua, bairro, município, divergências e botão de aplicação
 - Street View orientado por seleção manual no Maps
+
+---
+
+## 🧪 Testes e Ambiente Simulado SADE
+
+A extensão inclui um ambiente de simulação completo reproduzindo a arquitetura de tela do SADE:
+
+- **`teste-sade.html`**: Página de teste que emula o container com `#iframeContainer`, formulário de atendimento dinâmico, navegação entre telas, recriação de DOM (jQuery/AJAX) e limpeza de ocorrência.
+  - Para testar localmente: abra `teste-sade.html` no Chrome (com a opção *"Permitir acesso a URLs de arquivo"* ativa em `chrome://extensions` para a extensão), ou sirva via servidor HTTP local (`npx serve .` ou `node chrome_test.js`).
+- **`test_sade_suite.js`**: Suíte de testes automatizados com 12 asserções cobrindo integridade do manifest, injeção de scripts, heurísticas dos 9 campos, ordenação, exclusão de observações/histórico/filtros, proteção contra vínculo circular, idempotência e ausência de chamadas destrutivas. Execute com:
+  ```bash
+  node test_sade_suite.js
+  ```
+- **`chrome_test.js`**: Teste end-to-end automatizado via Chrome Headless e Chrome DevTools Protocol (CDP), validando a injeção real em 4 fases: (1) Mapeamento inicial 100%, (2) Mutação assíncrona AJAX, (3) Tela em branco/Aguardando formulário, (4) Restauração de formulário. Execute com:
+  ```bash
+  node chrome_test.js
+  ```
+
+> ⚠️ **Aviso de Ambiente**: Conforme especificado, o reconhecimento foi validado com arquitetura de iframes e formulário simulado (`teste-sade.html`). Em ambiente oficial do SADE, caso algum campo apresente rótulo interno não previsto, o operador pode utilizar o assistente manual de vinculação, ou inspecionar o atributo correspondente para inclusão no mapa heurístico.
 
 ---
 

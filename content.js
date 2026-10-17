@@ -1,4 +1,5 @@
-/* Relato 190 Essencial — apenas referência de campos e ação única. Sem coleta remota. */
+/* Relato 190 Essencial v5.7.0 — apenas referência de campos e ação única. Sem coleta remota.
+ * Adaptador SADE: reconhecimento automático de formulários (sade-adapter.js). */
 (() => {
   'use strict';
   if (window.__relatoEssencialInstance) {
@@ -20,6 +21,11 @@
   let mapsActive = false, mapsTimer = null, mapsLastStamp='', mapsBusy=false, mapsPendingStamp='', mapsObservedStamp='', mapsHoldStamp='', mapsManualPause=false;
   let lookupAllowed=false,lookupTimer=null,lookupScheduledStamp='',lookupBusy=false,lastLookupTime=0,lastLookupSignature='',recentLookup=null,storedProfiles=[];
   let cepCoordinates=null,cepCoordinatesFor=""; // Temporário: coordenadas de CEP são aproximadas, não de uma casa.
+  // ── Estado do adaptador SADE ─────────────────────────────────────────────
+  let sadeState = null;    // Último payload recebido do sade-adapter.js
+  let sadeBindings = {};   // { key: description } — descrições geradas pelo adaptador
+  const SADE_EVENT_OUT = 'relato190:sade:status';
+  const SADE_EVENT_IN  = 'relato190:sade:command';
   const municipalityFallback=['Colombo','Curitiba','Pinhais','São José dos Pinhais','Almirante Tamandaré','Campina Grande do Sul','Araucária','Piraquara','Campo Largo','Fazenda Rio Grande','Quatro Barras','Paranaguá','Londrina','Maringá','Cascavel','Ponta Grossa','Guarapuava','Foz do Iguaçu'];
   const observed = new WeakSet(), inserted = new WeakMap();
   const host = document.createElement('div');
@@ -84,6 +90,31 @@
   .selector{position:fixed;z-index:2147483647;left:50%;top:16px;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 20px);background:#0e3b46;color:#fff;box-shadow:0 9px 28px #0e303a55;border-radius:11px;padding:11px 14px;pointer-events:auto;font:600 13px Inter,system-ui,sans-serif}
   .selector button{background:#fff;color:#174851;border:0;padding:5px 9px;border-radius:6px;cursor:pointer;margin-left:8px}
   .toast{position:fixed;bottom:18px;right:18px;max-width:min(400px,calc(100vw - 24px));padding:12px 15px;border-radius:10px;background:#123e4a;color:#fff;box-shadow:0 10px 28px #0e303a44;z-index:2147483647;pointer-events:none;font:600 12px Inter,system-ui,sans-serif}
+  /* SADE adapter styles */
+  .sadeStatus{margin:8px 1px 4px;padding:8px 10px;border-radius:9px;font-size:11px;line-height:1.5;display:flex;align-items:center;gap:7px;border:1px solid #c5dfd6;background:#edf8f4;color:#0d5a4c}
+  .sadeStatus[data-sade="waiting"]{background:#fff9ec;border-color:#e4d59a;color:#7a5c10}
+  .sadeStatus[data-sade="unavailable"]{background:#fff0ee;border-color:#e0bab5;color:#8b2c22}
+  .sadeStatus[data-sade="partial"]{background:#fff5e6;border-color:#e4c68a;color:#7a4f10}
+  .sadeStatus[data-sade="dismissed"]{background:#f5f7f9;border-color:#d5dde3;color:#6b7f87}
+  .sadeStatus[hidden]{display:none!important}
+  .sadeStatus .sadeIcon{font-size:14px;flex-shrink:0}
+  .sadeStatusText{flex:1;min-width:0}
+  .sadeDismiss{border:0;background:transparent;color:inherit;opacity:.6;cursor:pointer;font-size:14px;padding:2px 4px;flex-shrink:0;line-height:1}
+  .sadeDismiss:hover{opacity:1}
+  .sadeFieldBadge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 5px;border-radius:4px;background:#d4f0e8;color:#0a6b5a;white-space:nowrap}
+  .sadeFieldBadge.confirm{background:#fff2db;color:#7a5010}
+  .sadeFieldBadge.conflict{background:#fce8e6;color:#8b2c22}
+  .sadeFieldBadge.missing{background:#f0f2f4;color:#7a8c92}
+  .sadeSettingsBox{border:1px solid #b8dfd5;border-radius:10px;padding:10px 11px;margin-top:12px;background:#f2fbf8}
+  .sadeSettingsTitle{font-weight:760;font-size:12px;margin-bottom:7px;color:#0a5a4c}
+  .sadeFieldList{display:grid;gap:5px;margin-top:6px}
+  .sadeFieldRow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;padding:5px 6px;border:1px solid #daeae5;border-radius:7px;background:#fff;font-size:11px}
+  .sadeFieldName{font-weight:650;color:#29444b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sadeConfirmBtn{border:1px solid #c2e0d9;background:#e5f4ef;color:#0a6258;padding:4px 7px;border-radius:5px;font:700 10px inherit;cursor:pointer;white-space:nowrap}
+  .sadeConfirmBtn:hover{background:#cceee4}
+  .sadeRescanBtn{width:100%;margin-top:7px;border:1px solid #b8dfd5;background:#e5f4ef;color:#0a6258;padding:7px;border-radius:7px;font:700 11px inherit;cursor:pointer}
+  .sadeRescanBtn:hover{background:#cceee4}
+
 
   .assist{border:1px solid #d3e6e5;border-radius:11px;margin-top:12px;overflow:hidden;background:#fbfdfd}
   .assist summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;color:#26565c;font-size:12px;font-weight:750;padding:11px 12px}
@@ -116,6 +147,7 @@
       <div class="mainView" id="mainView">
       <button class="primary" id="execute">Copiar e inserir tudo</button>
       <button class="mapsLink" id="openmaps" style="margin-top:9px">↗ Abrir Google Maps e acompanhar endereço</button>
+      <div class="sadeStatus" id="sadeStatusBar" hidden aria-live="polite"><span class="sadeIcon">&#128269;</span><span class="sadeStatusText" id="sadeStatusText"></span><button class="sadeDismiss" id="sadeDismissBtn" title="Ocultar SADE" aria-label="Ocultar">&#215;</button></div>
       <p class="mapsStatus" id="mapsStatus" aria-live="polite">Mapa desconectado. Abra a aba para iniciar o acompanhamento.</p>
       <div class="mapsActions"><button id="mapsNow" disabled>Atualizar pesquisa</button><button id="mapsPause" disabled>Pausar atualização</button></div>
       <div class="mapsActions" style="margin-top:7px"><button id="streetView" title="Tenta abrir Street View próximo ao endereço usando coordenadas disponíveis; confirme a rua e a fachada no Google Maps.">◉ Abrir Street View</button></div>
@@ -132,6 +164,12 @@
       </div>
       <div class="settingsView" id="settingsView" hidden>
       <h3>Configurações</h3><p class="settingsIntro">Gerencie vínculos e preferências. O conteúdo digitado durante o atendimento não é salvo.</p>
+      <div class="sadeSettingsBox" id="sadeSettingsBox" hidden>
+        <div class="sadeSettingsTitle" id="sadeSettingsTitle">SADE &mdash; reconhecimento autom&aacute;tico</div>
+        <p class="settingsIntro" id="sadeSettingsMsg"></p>
+        <div class="sadeFieldList" id="sadeFieldList"></div>
+        <button class="sadeRescanBtn" id="sadeRescanBtn">&#8635; Nova varredura de campos</button>
+      </div>
       <button class="wizard" id="wizard">✚ Vincular todos os campos (assistente)</button>
       <div class="section"><strong>Contato</strong></div><div id="contact"></div>
       <div class="section"><strong>Endereço</strong></div><div id="address"></div>
@@ -301,20 +339,33 @@
     try{await bindings.remote('save',JSON.parse(JSON.stringify(cfg)));render();}
     catch(err){show('Falha ao salvar os vínculos: '+err.message);}
   }
-  function removeField(key){delete cfg.fields[key];render();persist();scheduleMapsSync(true);scheduleLookup();show(names[key]+' desvinculado.');}
-  function boundElement(key){return cfg.fields[key]?bindings.resolve(cfg.fields[key],document):null;}
+  function removeField(key){delete cfg.fields[key];delete sadeBindings[key];render();persist();scheduleMapsSync(true);scheduleLookup();show(names[key]+' desvinculado.');}
+  function boundElement(key){
+    if(cfg.fields[key])return bindings.resolve(cfg.fields[key],document);
+    // Fallback: tentar resolver pela descrição do adaptador SADE (não salva ainda)
+    if(sadeBindings[key])return bindings.resolve(sadeBindings[key],document);
+    return null;
+  }
   function render(){
     for(const key of [...order,'cep']){
       const row=panel.querySelector(`[data-key="${key}"]`);const status=row.querySelector('.state');
       const btn=row.querySelector('.link'),clear=row.querySelector('.clear');
       const has=!!cfg.fields[key],found=has&&!!boundElement(key);
-      status.textContent=has?(found?'Vinculado':'Vínculo não encontrado'):'Não vinculado';
-      status.className='state'+(found?' ok':has?' missing':'');
+      // Determinar fonte do vínculo para o indicador visual
+      const sadeInfo=sadeState?.fields?.[key];
+      const isAutoSade=has&&sadeBindings[key]&&sadeInfo?.mode==='auto';
+      const isConfirmSade=sadeInfo?.mode==='confirm'||sadeInfo?.mode==='conflict';
+      let statusText=has?(found?'Vinculado':'Vínculo não encontrado'):'Não vinculado';
+      if(isAutoSade&&found)statusText='Automático (SADE)';
+      else if(isConfirmSade)statusText='Aguarda confirmação';
+      status.textContent=statusText;
+      status.className='state'+(found?' ok':has?' missing':isConfirmSade?' missing':'');
       btn.textContent=has?'Alterar':'Vincular';clear.style.visibility=has?'visible':'hidden';
     }
     $('#sep').value=cfg.separator==='|'?'|':'-';
     $('#profileAuto').checked=cfg.profileAuto!==false;
     updateToolbar();
+    renderSadeSettings();
   }
   $('#sep').addEventListener('change',e=>{cfg.separator=e.target.value==='|'?'|':'-';persist();});
   function getAddress(){const address=Object.fromEntries(['cidade','rua','numero','bairro'].map(key=>[key,read(key)]));const manual=matcher.cep($('#manualCep').value);address.cep=manual||read('cep');return address;}
@@ -753,12 +804,113 @@
     }
     if(lookupAllowed&&lookupStamp()!==lastLookupSignature)scheduleLookup();
   }
+  // ── Integração SADE ───────────────────────────────────────────────────────
+  function sadeIconFor(status){
+    return {idle:'',detecting:'🔍',waiting:'⏳',partial:'⚠',mapped:'✓',unavailable:'⚠',dismissed:''}[status]||'🔍';
+  }
+  function renderSadeStatusBar(){
+    const bar=$('#sadeStatusBar'),txt=$('#sadeStatusText');
+    if(!sadeState||sadeState.status==='idle'||sadeState.status==='dismissed'){bar.hidden=true;return;}
+    bar.hidden=false;
+    bar.dataset.sade=sadeState.status;
+    txt.textContent=sadeState.message||'';
+    const icon=bar.querySelector('.sadeIcon');
+    if(icon)icon.textContent=sadeIconFor(sadeState.status);
+  }
+  function renderSadeSettings(){
+    const box=$('#sadeSettingsBox'),titleEl=$('#sadeSettingsTitle'),msgEl=$('#sadeSettingsMsg'),list=$('#sadeFieldList');
+    if(!sadeState||sadeState.status==='idle'){box.hidden=true;return;}
+    box.hidden=false;
+    const statusLabels={detecting:'Detectando…',waiting:'Aguardando formulário…',partial:'Parcialmente reconhecido',mapped:'Campos reconhecidos',unavailable:'Inacessível (outra origem)',dismissed:'Ignorado'};
+    titleEl.textContent='SADE — '+(statusLabels[sadeState.status]||sadeState.status);
+    msgEl.textContent=sadeState.message||'';
+    list.replaceChildren();
+    for(const key of [...order,'cep']){
+      const info=sadeState.fields?.[key];
+      if(!info)continue;
+      const row=document.createElement('div');row.className='sadeFieldRow';
+      const nameEl=document.createElement('span');nameEl.className='sadeFieldName';nameEl.textContent=names[key];
+      const badge=document.createElement('span');badge.className='sadeFieldBadge';
+      const modeLabel={auto:'Automático',confirm:'Confirmar',conflict:'Conflito',missing:'Não encontrado'};
+      badge.textContent=modeLabel[info.mode]||info.mode;
+      badge.className='sadeFieldBadge '+(info.mode==='auto'?'':''+info.mode);
+      row.append(nameEl,badge);
+      // Botão confirmar para campos 'confirm' e 'conflict' que têm elemento
+      if((info.mode==='confirm')&&info.description){
+        const btn=document.createElement('button');btn.className='sadeConfirmBtn';btn.textContent='Confirmar';
+        btn.addEventListener('click',()=>confirmSadeField(key));
+        row.append(btn);
+      }else{const spacer=document.createElement('span');row.append(spacer);}
+      list.append(row);
+    }
+  }
+  function confirmSadeField(key){
+    const info=sadeState?.fields?.[key];
+    if(!info?.description)return;
+    // Aplicar descrição ao cfg.fields e salvar
+    try{
+      cfg.fields[key]=info.description;
+      sadeBindings[key]=info.description;
+      if(sadeState.fields[key])sadeState.fields[key].mode='auto';
+      // Notificar adaptador
+      window.dispatchEvent(new CustomEvent(SADE_EVENT_IN,{detail:{type:'confirm',key}}));
+      render();persist();
+      show(names[key]+' confirmado e vinculado.');
+    }catch(err){show('Não foi possível confirmar: '+(err.message||'erro'));}
+  }
+  function applySadeBindings(fields){
+    // Aplica vínculos automáticos (score >= 70) sem sobrescrever vínculos manuais existentes
+    let applied=0;
+    for(const [key,info] of Object.entries(fields||{})){
+      if(info.mode!=='auto')continue;
+      if(!info.description)continue;
+      // Não sobrescrever vínculo manual (que não veio do adaptador)
+      const isCurrentlyFromSade=!!sadeBindings[key];
+      const hasManual=!!cfg.fields[key]&&!isCurrentlyFromSade;
+      if(hasManual)continue;
+      cfg.fields[key]=info.description;
+      sadeBindings[key]=info.description;
+      applied++;
+    }
+    return applied;
+  }
+  function onSadeStatus(event){
+    const payload=event?.detail;
+    if(!payload||typeof payload!=='object')return;
+    sadeState=payload;
+    // Aplicar vínculos automáticos (sem interação do operador)
+    if(payload.status==='mapped'||payload.status==='partial'){
+      const applied=applySadeBindings(payload.fields);
+      if(applied>0){persist();}
+    }
+    render();renderSadeStatusBar();
+  }
+  function initSadeIntegration(){
+    window.addEventListener(SADE_EVENT_OUT,onSadeStatus);
+    // Botão fechar barra de status
+    const dismissBtn=$('#sadeDismissBtn');
+    if(dismissBtn)dismissBtn.addEventListener('click',()=>{
+      window.dispatchEvent(new CustomEvent(SADE_EVENT_IN,{detail:{type:'dismiss'}}));
+      $('#sadeStatusBar').hidden=true;
+    });
+    // Botão nova varredura
+    const rescanBtn=$('#sadeRescanBtn');
+    if(rescanBtn)rescanBtn.addEventListener('click',()=>{
+      sadeBindings={};
+      window.dispatchEvent(new CustomEvent(SADE_EVENT_IN,{detail:{type:'rescan'}}));
+      show('Nova varredura iniciada…');
+    });
+    // Pedir status atual ao adaptador (se já rodou antes do content.js)
+    window.dispatchEvent(new CustomEvent(SADE_EVENT_IN,{detail:{type:'ping'}}));
+  }
+  // ── Inicialização ─────────────────────────────────────────────────────────
   async function init(){
     try{
       const saved=await bindings.remote('load');
       if(saved){cfg=saved;cfg.fields={...saved.fields};}else cfg={fields:{},separator:'-'};
     }catch(err){show('Não foi possível carregar vínculos: '+err.message);}
     render();observeDocs();await loadProfiles();
+    initSadeIntegration();
     // Páginas reativas podem não emitir input; observar alterações apenas para funções ativadas.
     setInterval(()=>{if(mapsActive||lookupAllowed)checkAddressChanges();},1600);
     try{const active=await mapsMessage('RELATO_MAPS_STATUS');if(active.connected){mapsActive=!mapsManualPause;mapsStatus('Aba do Google Maps conectada. Endereço acompanhado automaticamente.',true);scheduleMapsSync(true);}}catch(_){}

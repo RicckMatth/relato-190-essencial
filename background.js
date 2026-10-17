@@ -1,5 +1,6 @@
 'use strict';
 importScripts('bindings.js','address-engine.js');
+// sade-adapter.js é injetado como content script junto ao content.js (não precisa de importScripts)
 const store=RelatoAgilBindings.server(chrome);
 const injecting=new Set();
 const SESSION_KEY='relato190.googleMaps.tabs.v1';
@@ -199,7 +200,8 @@ async function open(tabId,automatic=false){
  injecting.add(tabId);
  try{
   if(automatic)await chrome.scripting.executeScript({target:{tabId},func:()=>{window.__relatoEssencialAutomatic=true;}});
-  await chrome.scripting.executeScript({target:{tabId},files:['bindings.js','address-engine.js','content.js']});
+  // Injetar sade-adapter.js antes do content.js para que o adaptador esteja pronto quando o content.js inicializar.
+  await chrome.scripting.executeScript({target:{tabId},files:['bindings.js','address-engine.js','sade-adapter.js','content.js']});
   await chrome.action.setBadgeText({tabId,text:''});
  }finally{injecting.delete(tabId);}
 }
