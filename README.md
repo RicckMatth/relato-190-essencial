@@ -2,7 +2,7 @@
 
 > Extensão para Google Chrome que agiliza atendimentos do **190** com cópia em um clique, integração com Google Maps, conferência inteligente de endereços e sugestões por CEP.
 
-[![Versão](https://img.shields.io/badge/versão-5.8.0-0a7a6e?style=flat-square)](https://github.com/RicckMatth/relato-190-essencial/releases/latest)
+[![Versão](https://img.shields.io/badge/versão-5.9.2-0a7a6e?style=flat-square)](https://github.com/RicckMatth/relato-190-essencial/tree/master)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square&logo=google-chrome)](https://developer.chrome.com/docs/extensions/mv3/)
 [![Licença](https://img.shields.io/badge/licença-MIT-green?style=flat-square)](LICENSE)
 
@@ -10,9 +10,9 @@
 
 ## ⬇️ Download
 
-**[⬇ Baixar última versão (ZIP)](https://github.com/RicckMatth/relato-190-essencial/releases/latest/download/relato-190-essencial.zip)**
+**[⬇ Baixar última versão (ZIP)](https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip)**
 
-> Após baixar, siga as instruções de instalação abaixo.
+> O link baixa a versão mais recente do código na branch `master` (atualmente **v5.9.2**), não o release antigo v5.6.3. Após baixar, siga as instruções de instalação abaixo.
 
 ---
 
@@ -31,7 +31,7 @@
 | **Sugestões de rua/bairro** | Detecta erros de digitação em rua e bairro e sugere o nome correto com botão "Usar" |
 | **Perfis de campos** | Salva e recupera vínculos de campos por site; reconhecimento automático de perfis compatíveis |
 | **Barra arrastável** | Mini-barra flutuante reposicionável abaixo do campo principal |
-| **Privacidade estrita** | Nenhum dado de ocorrência é armazenado; sem submissão automática; consultas externas só com autorização explícita |
+| **Privacidade** | Histórico local criptografado somente quando habilitado, com expiração de 1 hora; envio ao Gemini somente após confirmação |
 
 ---
 
@@ -39,12 +39,12 @@
 
 ### Método 1 — Download direto (recomendado)
 
-1. **[Baixe o arquivo ZIP](https://github.com/RicckMatth/relato-190-essencial/releases/latest/download/relato-190-essencial.zip)**
-2. Extraia a pasta `relato-190-essencial`
+1. **[Baixe o arquivo ZIP](https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip)**
+2. Extraia o ZIP. A pasta normalmente se chamará `relato-190-essencial-master`.
 3. Abra o Chrome e acesse `chrome://extensions`
 4. Ative o **Modo do desenvolvedor** (canto superior direito)
 5. Clique em **"Carregar sem compactação"**
-6. Selecione a pasta `relato-190-essencial` extraída
+6. Selecione a pasta extraída que contém `manifest.json`
 
 ### Método 2 — Clonar repositório
 
