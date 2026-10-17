@@ -108,6 +108,27 @@ server.listen(8099, async () => {
   const addressContent = fs.readFileSync('address-engine.js', 'utf8');
   await sendCmd('Runtime.evaluate', { expression: addressContent });
 
+  // Injetar sade-theme.js
+  const themeContent = fs.readFileSync('sade-theme.js', 'utf8');
+  const tRes = await sendCmd('Runtime.evaluate', { expression: themeContent });
+  if (tRes.exceptionDetails) console.error('ERRO tema:', tRes.exceptionDetails);
+
+  // Injetar here-service.js
+  const hereContent = fs.readFileSync('here-service.js', 'utf8');
+  const hRes = await sendCmd('Runtime.evaluate', { expression: hereContent });
+  if (hRes.exceptionDetails) console.error('ERRO here:', hRes.exceptionDetails);
+
+  // Injetar address-popup.js
+  const popupContent = fs.readFileSync('address-popup.js', 'utf8');
+  const popupInjectRes = await sendCmd('Runtime.evaluate', { expression: popupContent });
+  if (popupInjectRes.exceptionDetails) console.error('ERRO popup:', popupInjectRes.exceptionDetails);
+
+  const checkGlobal = await sendCmd('Runtime.evaluate', {
+    expression: '({ theme: typeof window.RelatoSadeTheme, here: typeof window.Relato190Here, popup: typeof window.RelatoAddressPopup })',
+    returnByValue: true
+  });
+  console.log('Módulos no window:', checkGlobal.result.value);
+
   // Injetar sade-adapter.js
   const adapterContent = fs.readFileSync('sade-adapter.js', 'utf8');
   await sendCmd('Runtime.evaluate', { expression: adapterContent });
@@ -255,6 +276,167 @@ server.listen(8099, async () => {
   console.log('Status após recarregamento:', reloadPayload.status);
   if (reloadPayload.status === 'mapped') {
     console.log('✓ [FASE 4] Adaptador remapeou todos os campos após restauração do formulário!');
+  }
+
+  // ── FASE 5: Teste do Popup Flutuante na Tela com Sugestão de Município ───
+  console.log('\nExecutando FASE 5: Injetar content.js e testar popup flutuante na tela...');
+  const contentContent = fs.readFileSync('content.js', 'utf8');
+  const evalRes = await sendCmd('Runtime.evaluate', { expression: contentContent });
+  if (evalRes.exceptionDetails) {
+    console.error('ERRO ao avaliar content.js:', evalRes.exceptionDetails);
+  }
+  await new Promise(r => setTimeout(r, 600));
+
+  // Simular digitação de "Holombo" no campo de município
+  console.log('Simulando digitação de "Holombo" no campo de município...');
+  await sendCmd('Runtime.evaluate', {
+    expression: `(function() {
+      const iframe = document.querySelector('#iframeContainer');
+      const doc = iframe.contentDocument;
+      const input = doc.getElementById('municipioOcorrencia');
+      input.value = 'Holombo';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`
+  });
+
+  // Aguardar debounce de 300ms do input e animação do popup
+  await new Promise(r => setTimeout(r, 700));
+
+  // Inspecionar se o popup flutuante está visível no Shadow DOM com a indicação "Colombo"
+  const popupCheck = await sendCmd('Runtime.evaluate', {
+    expression: `(function() {
+      const root = document.querySelector('#relato190-essencial-root');
+      if (!root || !root.shadowRoot) return { found: false, error: 'Shadow root não encontrado' };
+      const children = [...root.shadowRoot.children].map(c => c.tagName + '.' + c.className);
+      const popup = root.shadowRoot.querySelector('.relato-address-popup');
+      if (!popup) return { found: false, error: 'Elemento .relato-address-popup não encontrado', children };
+      const isVisible = !popup.hidden && window.getComputedStyle(popup).display !== 'none';
+      const items = [...popup.querySelectorAll('.popup-item')];
+      const titles = items.map(it => it.querySelector('.popup-item-title')?.textContent || '');
+      const details = items.map(it => it.querySelector('.popup-item-details')?.textContent || '');
+      const buttons = items.map(it => it.querySelector('.popup-use-btn')?.textContent || '');
+      const rect = popup.getBoundingClientRect();
+      return {
+        found: true,
+        visible: isVisible,
+        titles,
+        details,
+        buttons,
+        rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
+      };
+    })()`,
+    returnByValue: true
+  });
+
+  console.log('Inspeção do popup na tela:');
+  console.log(JSON.stringify(popupCheck.result.value, null, 2));
+
+  const pRes = popupCheck.result.value;
+  if (pRes && pRes.visible && pRes.titles.includes('Colombo') && pRes.buttons.includes('Usar')) {
+    console.log('✓ [FASE 5] Popup flutuante apareceu na tela com a indicação "Colombo" e botão "Usar"!');
+
+    // Clicar em "Usar" e verificar preenchimento automático no formulário SADE
+    const clickResult = await sendCmd('Runtime.evaluate', {
+      expression: `(function() {
+        const root = document.querySelector('#relato190-essencial-root');
+        const btn = root.shadowRoot.querySelector('.popup-use-btn');
+        if (!btn) return { error: 'Botão Usar não encontrado' };
+        btn.click();
+        const iframe = document.querySelector('#iframeContainer');
+        const input = iframe.contentDocument.getElementById('municipioOcorrencia');
+        const undoArea = root.shadowRoot.querySelector('.popup-undo-area');
+        const undoVisible = undoArea && !undoArea.hidden;
+        return {
+          updatedValue: input ? input.value : null,
+          undoVisible
+        };
+      })()`,
+      returnByValue: true
+    });
+    console.log('Resultado após clicar em Usar:', clickResult.result.value);
+    if (clickResult.result.value?.updatedValue === 'Colombo') {
+      console.log('✓ [FASE 5] Campo de município no formulário SADE atualizado automaticamente para "Colombo"!');
+    } else {
+      console.error('✗ [FASE 5] Falha ao aplicar sugestão:', clickResult.result.value);
+      allOk = false;
+    }
+  } else {
+    console.error('✗ [FASE 5] Falha: popup na tela não exibiu a sugestão esperada.');
+    allOk = false;
+  }
+
+  // ── FASE 6: Testar o cenário exato do usuário: Colombo + "rua cecilia meir" ──
+  console.log('\nExecutando FASE 6: Testar reconhecimento de "rua cecilia meir" em Colombo...');
+  await sendCmd('Runtime.evaluate', {
+    expression: `(function() {
+      const iframe = document.querySelector('#iframeContainer');
+      const doc = iframe.contentDocument;
+      const inputRua = doc.getElementById('logradouroOcorrencia');
+      inputRua.value = 'rua cecilia meir';
+      inputRua.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`
+  });
+
+  // Aguardar debounce de 450ms do input e busca do ViaCEP/mock
+  await new Promise(r => setTimeout(r, 900));
+
+  const streetPopupCheck = await sendCmd('Runtime.evaluate', {
+    expression: `(function() {
+      const root = document.querySelector('#relato190-essencial-root');
+      if (!root || !root.shadowRoot) return { found: false, error: 'Shadow root não encontrado' };
+      const popup = root.shadowRoot.querySelector('.relato-address-popup');
+      if (!popup) return { found: false, error: 'Popup não encontrado' };
+      const isVisible = !popup.hidden && window.getComputedStyle(popup).display !== 'none';
+      const items = [...popup.querySelectorAll('.popup-item')];
+      const titles = items.map(it => it.querySelector('.popup-item-title')?.textContent || '');
+      const details = items.map(it => it.querySelector('.popup-item-details')?.textContent || '');
+      const buttons = items.map(it => it.querySelector('.popup-use-btn')?.textContent || '');
+      const rect = popup.getBoundingClientRect();
+      return {
+        found: true,
+        visible: isVisible,
+        titles,
+        details,
+        buttons,
+        rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
+      };
+    })()`,
+    returnByValue: true
+  });
+
+  console.log('Inspeção do popup na tela para "rua cecilia meir":');
+  console.log(JSON.stringify(streetPopupCheck.result.value, null, 2));
+
+  const sRes = streetPopupCheck.result.value;
+  if (sRes && sRes.visible && sRes.titles.some(t => t.includes('Cecília Meireles'))) {
+    console.log('✓ [FASE 6] Popup informativo exibiu "Rua Cecília Meireles" no topo da tela com sucesso!');
+
+    // Clicar em Usar
+    const streetClickResult = await sendCmd('Runtime.evaluate', {
+      expression: `(function() {
+        const root = document.querySelector('#relato190-essencial-root');
+        const btn = root.shadowRoot.querySelector('.popup-use-btn');
+        if (!btn) return { error: 'Botão Usar não encontrado' };
+        btn.click();
+        const iframe = document.querySelector('#iframeContainer');
+        const inputRua = iframe.contentDocument.getElementById('logradouroOcorrencia');
+        return {
+          updatedRua: inputRua ? inputRua.value : null
+        };
+      })()`,
+      returnByValue: true
+    });
+
+    console.log('Resultado após clicar em Usar logradouro:', streetClickResult.result.value);
+    if (streetClickResult.result.value?.updatedRua?.includes('Cecília Meireles')) {
+      console.log('✓ [FASE 6] Logradouro atualizado no formulário SADE para "Rua Cecília Meireles"!');
+    } else {
+      console.error('✗ [FASE 6] Falha ao atualizar logradouro:', streetClickResult.result.value);
+      allOk = false;
+    }
+  } else {
+    console.error('✗ [FASE 6] Falha: popup na tela não exibiu "Rua Cecília Meireles".', sRes);
+    allOk = false;
   }
 
   // Fechar Chrome e servidor

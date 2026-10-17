@@ -60,10 +60,11 @@ body{margin:0;background:#1a2533;color:#d0dae5;font-family:system-ui,Arial,sans-
 
     <!-- Controles de simulação -->
     <div class="test-panel">
-      <button onclick="loadForm()">▶ Carregar formulário de atendimento</button>
-      <button onclick="loadEmpty()">⬜ Carregar tela em branco</button>
-      <button onclick="reloadForm()">🔄 Recarregar formulário</button>
-      <button onclick="clearForm()">🗑 Limpar formulário (nova ocorrência)</button>
+      <button onclick="loadForm()">▶ Carregar formulário</button>
+      <button onclick="simulateCityTyping()">📍 Testar Município ("Holombo")</button>
+      <button onclick="simulateStreetTyping()">🛣 Testar Rua ("Rua Ataufo Alvis")</button>
+      <button onclick="toggleTheme()">🌓 Alternar Tema (Dark/Light)</button>
+      <button onclick="clearForm()">🗑 Limpar</button>
       <span id="simStatus">Simulador SADE — formulário não carregado.</span>
     </div>
   </div>
@@ -239,6 +240,55 @@ function clearForm() {
   });
   document.getElementById('simStatus').textContent =
     'Campos limpos. Simula conclusão de uma ocorrência.';
+}
+
+function simulateCityTyping() {
+  if (!formLoaded) loadForm();
+  setTimeout(() => {
+    const iframe = document.getElementById('iframeContainer');
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const input = doc.getElementById('municipioOcorrencia');
+    if (input) {
+      input.value = 'Holombo';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+      document.getElementById('simStatus').textContent =
+        'Digitado "Holombo". O popup flutuante deve surgir na tela indicando "Colombo" com [Usar]!';
+    }
+  }, 300);
+}
+
+function simulateStreetTyping() {
+  if (!formLoaded) loadForm();
+  setTimeout(() => {
+    const iframe = document.getElementById('iframeContainer');
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const input = doc.getElementById('logradouroOcorrencia');
+    if (input) {
+      input.value = 'Rua Ataufo Alvis';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+      document.getElementById('simStatus').textContent =
+        'Digitado "Rua Ataufo Alvis". O popup HERE deve sugerir "Rua Ataulfo Alves" na tela!';
+    }
+  }, 300);
+}
+
+let isDark = false;
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  const iframe = document.getElementById('iframeContainer');
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  if (doc && doc.documentElement) {
+    doc.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    if (doc.body) {
+      doc.body.style.background = isDark ? '#141e2a' : '#f5f8fa';
+      doc.body.style.color = isDark ? '#e3edf4' : '#1a2d38';
+    }
+  }
+  document.getElementById('simStatus').textContent =
+    `Tema alternado para ${isDark ? 'Escuro (Dark)' : 'Claro (Light)'}. O popup e tokens CSS acompanham automaticamente.`;
 }
 
 // Carregar automaticamente para facilitar o teste

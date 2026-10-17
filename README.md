@@ -2,7 +2,7 @@
 
 > Extensão para Google Chrome que agiliza atendimentos do **190** com cópia em um clique, integração com Google Maps, conferência inteligente de endereços e sugestões por CEP.
 
-[![Versão](https://img.shields.io/badge/versão-5.7.0-0a7a6e?style=flat-square)](https://github.com/RicckMatth/relato-190-essencial/releases/latest)
+[![Versão](https://img.shields.io/badge/versão-5.8.0-0a7a6e?style=flat-square)](https://github.com/RicckMatth/relato-190-essencial/releases/latest)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square&logo=google-chrome)](https://developer.chrome.com/docs/extensions/mv3/)
 [![Licença](https://img.shields.io/badge/licença-MIT-green?style=flat-square)](LICENSE)
 
@@ -20,6 +20,8 @@
 
 | Recurso | Descrição |
 |---|---|
+| **Popup Informativo no Topo (v5.8.0)** | Sugestões inteligentes de município e logradouro exibidas em card informativo no centro superior da tela, estável e sem obstruir campos |
+| **Busca Híbrida de Endereços** | HERE Technologies com fallback automático para ViaCEP oficial (Paraná/Brasil) e catálogo offline enriquecido |
 | **Reconhecimento SADE** | Reconhece e vincula automaticamente os 9 campos de atendimento do sistema SADE dentro de iframes dinâmicos |
 | **Cópia em um clique** | Copia nome · telefone · cidade · rua · número · bairro · complemento · relato em um toque, formatado em caixa alta com separador `-` ou `\|` |
 | **Google Maps integrado** | Abre e atualiza o Maps automaticamente conforme o endereço é preenchido |

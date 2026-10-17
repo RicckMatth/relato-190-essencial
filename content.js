@@ -21,6 +21,8 @@
   let mapsActive = false, mapsTimer = null, mapsLastStamp='', mapsBusy=false, mapsPendingStamp='', mapsObservedStamp='', mapsHoldStamp='', mapsManualPause=false;
   let lookupAllowed=false,lookupTimer=null,lookupScheduledStamp='',lookupBusy=false,lastLookupTime=0,lastLookupSignature='',recentLookup=null,storedProfiles=[];
   let cepCoordinates=null,cepCoordinatesFor=""; // Temporário: coordenadas de CEP são aproximadas, não de uma casa.
+  // ── HERE Technologies & Popup Flutuante na Tela ─────────────────────────
+  let hereService = null, addressPopup = null, fieldInputTimer = null;
   // ── Estado do adaptador SADE ─────────────────────────────────────────────
   let sadeState = null;    // Último payload recebido do sade-adapter.js
   let sadeBindings = {};   // { key: description } — descrições geradas pelo adaptador
@@ -115,6 +117,38 @@
   .sadeRescanBtn{width:100%;margin-top:7px;border:1px solid #b8dfd5;background:#e5f4ef;color:#0a6258;padding:7px;border-radius:7px;font:700 11px inherit;cursor:pointer}
   .sadeRescanBtn:hover{background:#cceee4}
 
+  /* ── Popup Flutuante Contextual Glassmorphism (HERE / Endereço Inteligente) ── */
+  .relato-address-popup{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:2147483647;width:min(520px,calc(100vw - 32px));background:var(--relato-popup-bg,rgba(255,255,255,0.96));backdrop-filter:var(--relato-blur,blur(14px));-webkit-backdrop-filter:var(--relato-blur,blur(14px));border:1px solid var(--relato-popup-border,rgba(180,202,216,0.75));border-radius:14px;box-shadow:var(--relato-popup-shadow,0 14px 42px rgba(15,35,55,0.22));padding:11px 14px;color:var(--relato-text,#132832);font-family:Inter,system-ui,-apple-system,sans-serif;max-height:380px;display:flex;flex-direction:column;pointer-events:auto;animation:relatoPopupSlideDown 150ms ease-out;box-sizing:border-box}
+  @keyframes relatoPopupSlideDown{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
+  .relato-address-popup.pos-above{animation:relatoPopupSlideDown 150ms ease-out}
+  .relato-address-popup[hidden]{display:none!important}
+  .popup-header{display:flex;align-items:center;gap:7px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--relato-border,#e2ecf0)}
+  .popup-icon{font-size:14px;line-height:1}
+  .popup-title{font-size:12px;font-weight:750;color:var(--relato-text,#132832);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .popup-source{font-size:9px;font-weight:750;text-transform:uppercase;letter-spacing:.5px;background:var(--relato-hover,rgba(10,96,144,0.08));color:var(--relato-primary,#0a6090);padding:2px 5px;border-radius:4px;white-space:nowrap}
+  .popup-close{border:0;background:transparent;color:var(--relato-text-muted,#728a94);font-size:16px;cursor:pointer;padding:1px 6px;line-height:1;border-radius:4px;transition:background 120ms ease}
+  .popup-close:hover{background:var(--relato-hover,rgba(0,0,0,0.06));color:var(--relato-text,#111)}
+  .popup-body{overflow-y:auto;max-height:260px;display:flex;flex-direction:column;gap:5px}
+  .popup-list{display:flex;flex-direction:column;gap:5px}
+  .popup-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:9px;cursor:pointer;transition:background 120ms ease,border-color 120ms ease;border:1px solid var(--relato-border,#e0ecec);background:var(--relato-surface,#ffffff);margin-bottom:4px}
+  .popup-item:hover,.popup-item.selected{background:var(--relato-hover,#f0f8f6);border-color:var(--relato-selected,#83c6b8)}
+  .popup-item-content{flex:1;min-width:0}
+  .popup-item-title{font-size:13px;font-weight:750;color:var(--relato-text,#0f3942);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .popup-item-details{font-size:11px;color:var(--relato-text-muted,#628288);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .popup-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;margin-top:3px}
+  .popup-badge.badge-exact{background:var(--relato-badge-auto-bg,#d8f3eb);color:var(--relato-badge-auto-text,#085f4e)}
+  .popup-badge.badge-warn{background:var(--relato-badge-warn-bg,#fff4dc);color:var(--relato-badge-warn-text,#7d5312);border:1px solid var(--relato-badge-warn-border,#edd59c)}
+  .popup-badge.badge-diff{background:var(--relato-badge-diff-bg,#fbeae7);color:var(--relato-badge-diff-text,#872e22);border:1px solid var(--relato-badge-diff-border,#ebc0ba)}
+  .popup-use-btn{border:1px solid var(--relato-btn-border,#bfe5db);background:var(--relato-btn-bg,#e8f7f3);color:var(--relato-btn-text,#057062);font-weight:750;font-size:11px;padding:6px 14px;border-radius:7px;cursor:pointer;transition:background 120ms ease,transform 90ms ease;flex-shrink:0}
+  .popup-use-btn:hover{background:var(--relato-btn-hover,#d8f2ec);transform:scale(1.03)}
+  .popup-footer{padding-top:6px;margin-top:6px;border-top:1px solid var(--relato-border,#e2ecf0);display:flex;align-items:center;justify-content:space-between}
+  .popup-hint{font-size:9px;color:var(--relato-text-muted,#728a94)}
+  .popup-undo-area{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:4px 0}
+  .popup-undo-text{font-size:11px;font-weight:700;color:var(--relato-text,#132832)}
+  .popup-undo-btn{background:#e0f0eb;border:1px solid #b7dfd5;color:#0b6152;padding:4px 9px;border-radius:5px;font-size:10px;font-weight:750;cursor:pointer}
+  .popup-undo-btn:hover{background:#cfe9e2}
+
+
 
   .assist{border:1px solid #d3e6e5;border-radius:11px;margin-top:12px;overflow:hidden;background:#fbfdfd}
   .assist summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;color:#26565c;font-size:12px;font-weight:750;padding:11px 12px}
@@ -183,8 +217,17 @@
         <select id="profileList" class="assistInput" aria-label="Perfis salvos"><option value="">Nenhum perfil salvo</option></select>
         <div class="profileBtns"><button id="profileApply">Aplicar</button><button id="profileDelete">Excluir</button></div>
         <label class="assistCheck"><input id="profileAuto" type="checkbox" checked>Reconhecer automaticamente perfis compatíveis</label>
-        <div class="assistInfo" id="profileStatus">Vínculos atuais salvos apenas para este site.</div>
        </div><div class="settingsBox"><div class="settingsTitle">Google Maps</div><p class="settingsIntro">Nenhuma base local é necessária. O acompanhamento só começa depois que você abrir o Maps, e pode ser pausado a qualquer momento.</p></div>
+       <div class="settingsBox" id="hereSettingsBox">
+         <div class="settingsTitle">Sugestões de Endereço (Popup na Tela)</div>
+         <p class="settingsIntro">Exibe sugestões inteligentes em popup na tela ao digitar logradouros ou municípios no SADE. Integração HERE Technologies v7 e base do Paraná.</p>
+         <label class="assistCheck"><input id="hereEnabled" type="checkbox" checked>Ativar popup de sugestões flutuante na tela</label>
+         <label class="assistCheck"><input id="hereUseMock" type="checkbox" checked>Simulador offline integrado (não consome cota de API)</label>
+         <label class="fieldLabel" for="hereApiKey">Chave de API HERE (opcional)</label>
+         <input id="hereApiKey" class="assistInput" type="password" placeholder="Insira sua API Key da HERE se possuir" autocomplete="off">
+         <div class="profileBtns"><button type="button" id="hereSaveBtn">Salvar preferências</button><button type="button" id="hereTestBtn">Testar popup na tela</button></div>
+         <div class="assistInfo" id="hereStatus">Popup configurado para aparecer na tela sobre o campo ativo.</div>
+       </div>
       </div>
     </div>
     <div class="foot">Apenas vínculos e preferências são salvos neste site. Dados das ocorrências não são armazenados.</div>`;
@@ -198,6 +241,22 @@
   const toast = document.createElement('div');toast.className='toast';toast.hidden=true;
   shadow.append(panel,toolbar,selectionBanner,toast);
   (document.body||document.documentElement).append(host);
+  // Aplicar tema dinâmico SADE imediatamente no Shadow DOM
+  if(typeof RelatoSadeTheme!=='undefined'){
+    (RelatoSadeTheme.applyTheme||RelatoSadeTheme.apply)(shadow);
+    RelatoSadeTheme.watchThemeChanges(shadow);
+  }
+  // Inicializar serviço HERE Technologies
+  if(typeof Relato190Here!=='undefined'&&Relato190Here.HereService){
+    hereService=new Relato190Here.HereService({
+      apiKey:cfg.hereApiKey||'',
+      useMock:cfg.hereUseMock!==false
+    });
+  }
+  // Inicializar Popup Flutuante Contextual na tela imediatamente
+  if(typeof RelatoAddressPopup!=='undefined'){
+    addressPopup=new RelatoAddressPopup(shadow,{});
+  }
   const $=selector=>shadow.querySelector(selector);
   let toastTimeout;
   function show(message) {
@@ -231,6 +290,39 @@
   $('#manualCep').addEventListener('input',()=>{const digits=matcher.cep($('#manualCep').value);$('#manualCep').value=digits.length>5?digits.slice(0,5)+'-'+digits.slice(5):digits;recentLookup=null;cepCoordinates=null;cepCoordinatesFor='';$('#cepResult').hidden=true;scheduleLookup();});
   $('#profileSave').addEventListener('click',saveProfile);$('#profileApply').addEventListener('click',applySelectedProfile);$('#profileDelete').addEventListener('click',deleteProfile);
   $('#profileAuto').addEventListener('change',e=>{cfg.profileAuto=e.target.checked;persist();});
+  $('#hereSaveBtn')?.addEventListener('click',async()=>{
+    cfg.hereEnabled=$('#hereEnabled').checked;
+    cfg.hereUseMock=$('#hereUseMock').checked;
+    cfg.hereApiKey=($('#hereApiKey').value||'').trim();
+    if(hereService){
+      hereService.apiKey=cfg.hereApiKey;
+      hereService.useMock=cfg.hereUseMock;
+    }
+    await persist();
+    show('Preferências de endereço salvas.');
+  });
+  $('#hereTestBtn')?.addEventListener('click',()=>{
+    const target=findFieldElement('cidade')||findFieldElement('rua')||document.activeElement;
+    if(addressPopup&&target){
+      addressPopup.show(target,[{
+        name:'Colombo',
+        title:'Colombo',
+        subtitle:'Município parecido · confira antes de usar',
+        type:'city',
+        score:85
+      }],{
+        title:'Sugestão de Município',
+        source:'IBGE / SADE',
+        onSelect:(item)=>{
+          applySuggestion({cidade:item.name});
+        },
+        onUndo:(prevVal)=>{
+          applySuggestion({cidade:prevVal});
+        }
+      });
+      show('Popup exibido na tela!');
+    }
+  });
   $('#mapsPause').addEventListener('click',()=>{
     mapsActive=!mapsActive;
     mapsManualPause=!mapsActive;
@@ -346,6 +438,178 @@
     if(sadeBindings[key])return bindings.resolve(sadeBindings[key],document);
     return null;
   }
+  function findFieldElement(key){
+    const el=boundElement(key);
+    if(el)return el;
+    const selectors={
+      cidade:['#municipio','input[id*="municipio" i]','input[name*="municipio" i]','#cidade','input[id*="cidade" i]','input[name*="cidade" i]','[data-field="municipio"]'],
+      rua:['#logradouro','input[id*="logradouro" i]','input[name*="logradouro" i]','input[id*="endereco" i]','input[name*="endereco" i]','#rua','[data-field="logradouro"]'],
+      bairro:['#bairro','input[id*="bairro" i]','input[name*="bairro" i]','[data-field="bairro"]'],
+      numero:['#numero','input[id*="numero" i]','input[name*="numero" i]','input[id*="imovel" i]','input[name*="imovel" i]']
+    };
+    const list=selectors[key]||[];
+    for(const doc of bindings.documents(document)){
+      for(const sel of list){
+        try{
+          const found=doc.querySelector(sel);
+          if(found&&bindings.addressField(found))return found;
+        }catch(_){}
+      }
+    }
+    return null;
+  }
+  function handleFieldSuggestion(key,target){
+    if(!target||!addressPopup)return;
+    const val=String(target.value||'').trim();
+
+    if(key==='cidade'){
+      if(val.length<3){
+        if(addressPopup.visible&&addressPopup.targetEl===target)addressPopup.hide();
+        return;
+      }
+      const municipios=recentLookup?.results?.municipios?.map(x=>x.nome)||municipalityFallback;
+      const cityMatches=matcher.rank(val,municipios,3).filter(x=>x.score>=60&&matcher.norm(x.name)!==matcher.norm(val));
+      if(cityMatches.length>0){
+        addressPopup.show(target,cityMatches.map(item=>({
+          name:item.name,
+          title:item.name,
+          subtitle:'Município parecido · confira antes de usar',
+          type:'city',
+          score:item.score
+        })),{
+          title:'Sugestão de Município',
+          source:'IBGE / SADE',
+          onSelect:(item)=>{
+            try{setText(target,item.name);}catch(_){}
+            applySuggestion({cidade:item.name});
+          },
+          onUndo:(prevVal)=>{
+            try{setText(target,prevVal);}catch(_){}
+            applySuggestion({cidade:prevVal});
+          }
+        });
+      }else{
+        if(addressPopup.visible&&addressPopup.targetEl===target)addressPopup.hide();
+      }
+    }else if(key==='rua'){
+      if(val.length<3){
+        if(addressPopup.visible&&addressPopup.targetEl===target)addressPopup.hide();
+        return;
+      }
+      if(hereService){
+        const cidadeVal=read('cidade')||'';
+        const bairroVal=read('bairro')||'';
+        hereService.autosuggest(val,{city:cidadeVal,cidade:cidadeVal,district:bairroVal,bairro:bairroVal,limit:5})
+          .then(res=>{
+            const rawItems=Array.isArray(res)?res:(res?.items||[]);
+            if(!rawItems.length){
+              if(addressPopup.visible&&addressPopup.targetEl===target)addressPopup.hide();
+              return;
+            }
+            const suggestions=rawItems.map(item=>({
+              title:item.street||item.title||item.name,
+              street:item.street||item.title||item.name,
+              district:item.district||'',
+              city:item.city||cidadeVal,
+              state:item.state||'PR',
+              postalCode:item.postalCode||'',
+              divergentCity:item.divergentCity||null,
+              districtDivergence:item.districtDivergence||false,
+              matchType:item.matchType||'fuzzy',
+              source:item.source||(res.mock?'HERE (Simulador)':'HERE Technologies')
+            }));
+            const primarySource=suggestions[0]?.source||(res.mock?'HERE (Simulador)':'HERE Technologies');
+            addressPopup.show(target,suggestions,{
+              title:'Sugestão de Logradouro',
+              source:primarySource,
+              onSelect:(item)=>{
+                try{setText(target,item.street);}catch(_){}
+                const updates={rua:item.street};
+                if(item.district&&(!bairroVal||item.districtDivergence)){
+                  updates.bairro=item.district;
+                }
+                if(item.postalCode&&!read('cep')){
+                  updates.cep=item.postalCode;
+                }
+                if(item.city&&item.divergentCity){
+                  updates.cidade=item.city;
+                }
+                applySuggestion(updates);
+              },
+              onUndo:(prevVal)=>{
+                try{setText(target,prevVal);}catch(_){}
+                applySuggestion({rua:prevVal});
+              }
+            });
+          })
+          .catch(()=>{
+            if(addressPopup.visible&&addressPopup.targetEl===target)addressPopup.hide();
+          });
+      }
+    }else if(key==='bairro'){
+      const ruaVal=read('rua');
+      const cidadeVal=read('cidade');
+      if(val.length>=3&&ruaVal&&hereService){
+        hereService.autosuggest(ruaVal,{city:cidadeVal,cidade:cidadeVal,district:val,bairro:val,limit:3})
+          .then(res=>{
+            const best=(Array.isArray(res)?res[0]:res?.items?.[0]);
+            if(best&&best.district&&matcher.score(val,best.district)<70&&matcher.norm(val)!==matcher.norm(best.district)){
+              addressPopup.show(target,[{
+                title:best.district,
+                street:best.street,
+                district:best.district,
+                city:best.city,
+                subtitle:`Bairro cadastrado para "${best.street||ruaVal}"`,
+                districtDivergence:true
+              }],{
+                title:'Divergência de Bairro',
+                source:best.source||(res.mock?'HERE (Simulador)':'HERE Technologies'),
+                onSelect:(item)=>{
+                  try{setText(target,item.district);}catch(_){}
+                  applySuggestion({bairro:item.district});
+                },
+                onUndo:(prevVal)=>{
+                  try{setText(target,prevVal);}catch(_){}
+                  applySuggestion({bairro:prevVal});
+                }
+              });
+            }else if(addressPopup.visible&&addressPopup.targetEl===target){
+              addressPopup.hide();
+            }
+          })
+          .catch(()=>{});
+      }
+    }
+  }
+  function onFieldInput(e){
+    if(cfg.hereEnabled===false)return;
+    const target=e.target;
+    if(!target||!target.tagName||!['INPUT','TEXTAREA'].includes(target.tagName))return;
+    if(target.closest&&target.closest('.panel, .relato-address-popup, .toolbar'))return;
+
+    let matchedKey=null;
+    for(const key of ['cidade','rua','bairro']){
+      if(boundElement(key)===target||findFieldElement(key)===target){
+        matchedKey=key;
+        break;
+      }
+    }
+
+    if(!matchedKey){
+      const id=String(target.id||'').toLowerCase();
+      const name=String(target.name||'').toLowerCase();
+      if(id.includes('municipio')||name.includes('municipio')||id.includes('cidade')||name.includes('cidade'))matchedKey='cidade';
+      else if(id.includes('logradouro')||name.includes('logradouro')||id.includes('endereco')||name.includes('endereco'))matchedKey='rua';
+      else if(id.includes('bairro')||name.includes('bairro'))matchedKey='bairro';
+    }
+
+    if(!matchedKey)return;
+
+    clearTimeout(fieldInputTimer);
+    fieldInputTimer=setTimeout(()=>{
+      handleFieldSuggestion(matchedKey,target);
+    },matchedKey==='cidade'?300:450);
+  }
   function render(){
     for(const key of [...order,'cep']){
       const row=panel.querySelector(`[data-key="${key}"]`);const status=row.querySelector('.state');
@@ -364,6 +628,9 @@
     }
     $('#sep').value=cfg.separator==='|'?'|':'-';
     $('#profileAuto').checked=cfg.profileAuto!==false;
+    if($('#hereEnabled'))$('#hereEnabled').checked=cfg.hereEnabled!==false;
+    if($('#hereUseMock'))$('#hereUseMock').checked=cfg.hereUseMock!==false;
+    if($('#hereApiKey'))$('#hereApiKey').value=cfg.hereApiKey||'';
     updateToolbar();
     renderSadeSettings();
   }
@@ -489,7 +756,28 @@
     const holder=$('#lookupSuggestions');holder.replaceChildren();
     const a=getAddress(),municipios=recentLookup?.results?.municipios?.map(x=>x.nome)||municipalityFallback;
     const cityMatches=matcher.rank(a.cidade,municipios,3).filter(x=>x.score>=60&&matcher.norm(x.name)!==matcher.norm(a.cidade));
-    for(const item of cityMatches){addSuggestion(item.name,'Município parecido · confira antes de usar',()=>applySuggestion({cidade:item.name}));}
+    // Configuração v5.8.0 solicitada: a indicação de município parecido aparece em POPUP NA TELA e NÃO na extensão!
+    if(cityMatches.length>0&&addressPopup){
+      const cidadeEl=findFieldElement('cidade');
+      addressPopup.show(cidadeEl,cityMatches.map(item=>({
+        name:item.name,
+        title:item.name,
+        subtitle:'Município parecido · confira antes de usar',
+        type:'city',
+        score:item.score
+      })),{
+        title:'Sugestão de Município',
+        source:'IBGE / SADE',
+        onSelect:(item)=>{
+          applySuggestion({cidade:item.name});
+        },
+        onUndo:(prevVal)=>{
+          applySuggestion({cidade:prevVal});
+        }
+      });
+    }else if(addressPopup&&addressPopup.visible&&addressPopup.targetEl===findFieldElement('cidade')){
+      addressPopup.hide();
+    }
     // Usa stamp parcial (cidade+rua+CEP, sem bairro) para manter o lookup válido enquanto o bairro é editado
     if(!recentLookup||stampToPartial(recentLookup.stamp)!==lookupStampPartial())return;
     const r=recentLookup.results;
@@ -547,7 +835,7 @@
     let updated=0,missing=[];
     for(const [key,value] of Object.entries(values)){
       if(!value)continue;
-      const el=boundElement(key);
+      const el=boundElement(key)||findFieldElement(key);
       if(!el){missing.push(names[key]||key);continue;}
       if(el.disabled||el.readOnly){missing.push(names[key]||key);continue;}
       try{setText(el,value);updated++;}catch(_){missing.push(names[key]||key);}
@@ -619,7 +907,7 @@
   document.addEventListener('input',()=>{scheduleMapsSync();scheduleLookup();},true);
   document.addEventListener('change',()=>{scheduleMapsSync();setTimeout(scheduleLookup,150);},true);
   function read(key){
-    const el=boundElement(key);
+    const el=boundElement(key)||findFieldElement(key);
     return el ? bindings.valueOf(el) : '';
   }
   function normalize(value){return String(value||'').replace(/\s+/g,' ').trim().toLocaleUpperCase('pt-BR');}
@@ -775,7 +1063,10 @@
   function monitor(doc){
     if(observed.has(doc))return;observed.add(doc);
     doc.addEventListener('scroll',scheduleToolbarUpdate,true);
+    doc.addEventListener('scroll',()=>{if(addressPopup&&addressPopup.visible)addressPopup.reposition();},true);
     doc.defaultView?.addEventListener('resize',scheduleToolbarUpdate);
+    doc.defaultView?.addEventListener('resize',()=>{if(addressPopup&&addressPopup.visible)addressPopup.reposition();});
+    doc.addEventListener('input',onFieldInput,true);
     // Atualiza o botão somente uma vez por frame, mesmo em páginas reativas.
     const observer=new MutationObserver(records=>{
       scheduleToolbarUpdate();
@@ -791,8 +1082,9 @@
     observer.observe(doc.documentElement||doc,{childList:true,subtree:true});
   }
   function observeDocs(){for(const doc of bindings.documents(document))monitor(doc);}
-  window.addEventListener('resize',updateToolbar);
-  window.addEventListener('scroll',updateToolbar,true);
+  window.addEventListener('resize',()=>{updateToolbar();if(addressPopup&&addressPopup.visible)addressPopup.reposition();});
+  window.addEventListener('scroll',()=>{updateToolbar();if(addressPopup&&addressPopup.visible)addressPopup.reposition();},true);
+  document.addEventListener('input',onFieldInput,true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&selecting)stopSelecting(true);},true);
   function checkAddressChanges(){
     if(mapsActive){
@@ -905,16 +1197,24 @@
   }
   // ── Inicialização ─────────────────────────────────────────────────────────
   async function init(){
+    render();observeDocs();
     try{
-      const saved=await bindings.remote('load');
-      if(saved){cfg=saved;cfg.fields={...saved.fields};}else cfg={fields:{},separator:'-'};
-    }catch(err){show('Não foi possível carregar vínculos: '+err.message);}
-    render();observeDocs();await loadProfiles();
+      const saved=await Promise.race([
+        bindings.remote('load'),
+        new Promise((_,reject)=>setTimeout(()=>reject(Error('timeout')),1200))
+      ]);
+      if(saved){
+        cfg=saved;cfg.fields={...saved.fields};
+        if(hereService){
+          if(cfg.hereApiKey)hereService.apiKey=cfg.hereApiKey;
+          if(typeof cfg.hereUseMock==='boolean')hereService.useMock=cfg.hereUseMock;
+        }
+      }
+    }catch(err){if(err.message!=='timeout')show('Não foi possível carregar vínculos: '+err.message);}
+    render();await loadProfiles();
     initSadeIntegration();
-    // Páginas reativas podem não emitir input; observar alterações apenas para funções ativadas.
     setInterval(()=>{if(mapsActive||lookupAllowed)checkAddressChanges();},1600);
     try{const active=await mapsMessage('RELATO_MAPS_STATUS');if(active.connected){mapsActive=!mapsManualPause;mapsStatus('Aba do Google Maps conectada. Endereço acompanhado automaticamente.',true);scheduleMapsSync(true);}}catch(_){}
-    // Alterações de DOM e scroll atualizam a barra sem varredura contínua da página.
   }
   init();
 })();

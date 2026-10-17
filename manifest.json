@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Relato 190 — Essencial + Endereços",
-  "version": "5.7.0",
-  "description": "Cópia em um clique, Google Maps, conferência de CEP, perfis de campos e reconhecimento automático do SADE. Consultas externas somente após consentimento.",
+  "version": "5.8.0",
+  "description": "Cópia em um clique, Google Maps, conferência de CEP, perfis de campos, reconhecimento automático do SADE e sugestões de endereço com HERE Technologies. Consultas externas somente após consentimento.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -29,6 +29,8 @@
   "host_permissions": [
     "https://viacep.com.br/*",
     "https://brasilapi.com.br/*",
-    "https://servicodados.ibge.gov.br/*"
+    "https://servicodados.ibge.gov.br/*",
+    "https://*.hereapi.com/*",
+    "https://*.search.hereapi.com/*"
   ]
 }

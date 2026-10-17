@@ -35,21 +35,23 @@ const manifestCode = fs.readFileSync('manifest.json', 'utf8');
 const bindingsCode = fs.readFileSync('bindings.js', 'utf8');
 
 // ── 1. Verificações de Sintaxe e Integridade ──────────────────────────────────
-test('1. Manifest V3: versão 5.7.0 e estrutura válida', () => {
+test('1. Manifest V3: versão 5.8.0 e estrutura válida', () => {
   const manifest = JSON.parse(manifestCode);
   assert.strictEqual(manifest.manifest_version, 3, 'Deve ser Manifest V3');
-  assert.strictEqual(manifest.version, '5.7.0', 'Versão deve ser 5.7.0');
+  assert.strictEqual(manifest.version, '5.8.0', 'Versão deve ser 5.8.0');
   assert.ok(manifest.permissions.includes('activeTab'), 'Permissão activeTab');
   assert.ok(manifest.permissions.includes('scripting'), 'Permissão scripting');
   assert.ok(manifest.permissions.includes('storage'), 'Permissão storage');
+  assert.ok(manifest.host_permissions.some(p => p.includes('hereapi.com')), 'Permissão para HERE Technologies');
 });
 
-test('2. Background: injeção sequencial inclui sade-adapter.js antes do content.js', () => {
+test('2. Background: injeção sequencial inclui módulos v5.8.0 antes do content.js', () => {
   assert.ok(
-    backgroundCode.includes("'sade-adapter.js','content.js'") ||
-    backgroundCode.includes('"sade-adapter.js","content.js"') ||
-    backgroundCode.includes("'sade-adapter.js', 'content.js'"),
-    'sade-adapter.js deve ser injetado antes de content.js'
+    backgroundCode.includes("'sade-theme.js'") &&
+    backgroundCode.includes("'here-service.js'") &&
+    backgroundCode.includes("'address-popup.js'") &&
+    backgroundCode.includes("'sade-adapter.js'"),
+    'Módulos de tema, HERE, popup e adaptador devem ser injetados antes de content.js'
   );
 });
 
@@ -245,6 +247,36 @@ test('12. Preservação de privacidade: sem submissão automática e sem cookies
   assert.ok(!adapterCode.includes('form.submit()'), 'Nunca submete formulário');
   assert.ok(!adapterCode.includes('document.cookie'), 'Nunca lê cookies');
   assert.ok(!contentCode.includes('form.submit()'), 'Content script nunca submete');
+});
+
+test('13. HERE Technologies: serviço com sanitização, fallback offline e centróides do PR', () => {
+  const hereCode = fs.readFileSync('here-service.js', 'utf8');
+  assert.ok(hereCode.includes('HereService'), 'Classe HereService presente');
+  assert.ok(hereCode.includes('CITY_CENTROIDS'), 'Centróides do Paraná mapeados');
+  assert.ok(hereCode.includes('cleanQuery'), 'Sanitização ativa (remove caracteres perigosos e limita tamanho)');
+  assert.ok(hereCode.includes('MOCK_STREET_DATABASE'), 'Base mock com ruas do Paraná (Colombo, Curitiba, Pinhais)');
+});
+
+test('14. AddressPopup: cálculo de coordenadas no iframeContainer e navegação por teclado', () => {
+  const popupCode = fs.readFileSync('address-popup.js', 'utf8');
+  assert.ok(popupCode.includes('AddressPopup'), 'Classe AddressPopup presente');
+  assert.ok(popupCode.includes('getViewRect'), 'Método getViewRect mapeia coordenadas de iframes recursivamente');
+  assert.ok(popupCode.includes('ArrowDown') && popupCode.includes('ArrowUp') && popupCode.includes('Enter'), 'Navegação via setas e Enter');
+  assert.ok(popupCode.includes('showUndoFeedback'), 'Mecanismo de Desfazer');
+});
+
+test('15. Popup na tela: indicação configurada para aparecer em popup na tela ao invés da extensão', () => {
+  assert.ok(contentCode.includes('addressPopup.show'), 'Chamada para addressPopup.show presente');
+  assert.ok(contentCode.includes('relato-address-popup'), 'Classe CSS do popup flutuante presente no content');
+  assert.ok(contentCode.includes('findFieldElement'), 'Função findFieldElement para ancoragem em elementos SADE');
+  assert.ok(contentCode.includes('onFieldInput'), 'Listener onFieldInput captura digitação em tempo real');
+});
+
+test('16. Integração visual nativa e tema dinâmico SADE', () => {
+  const themeCode = fs.readFileSync('sade-theme.js', 'utf8');
+  assert.ok(themeCode.includes('RelatoSadeTheme'), 'Módulo RelatoSadeTheme presente');
+  assert.ok(themeCode.includes('extractSadeColors'), 'Extração dinâmica de cores do SADE');
+  assert.ok(themeCode.includes('watchThemeChanges'), 'Observador de alternância dark/light mode');
 });
 
 console.log(`\n========================================================`);

@@ -35,3 +35,12 @@ NOVIDADES 5.7.0:
 - Prioridade transparente de vínculos: (1) SADE automático, (2) Perfil salvo compatível, (3) Assistente manual. O operador pode confirmar ou alterar qualquer vínculo individualmente.
 - Novo simulador de testes com arquitetura SADE: teste-sade.html. Execute também as suítes automatizadas via "node test_sade_suite.js" e "node chrome_test.js".
 - Privacidade preservada: nenhuma credencial ou dado de ocorrência é lido/salvo; nenhuma submissão automática é realizada.
+
+NOVIDADES 5.8.0:
+- Popup Informativo no Topo da Tela: As sugestões inteligentes de município e logradouro agora aparecem em um banner informativo centralizado no topo da tela, estável e visível, sem cobrir os campos em digitação nem depender de abrir o painel da extensão.
+- Busca Híbrida de Logradouros: Integração com HERE Technologies v7 com fallback automático para consulta pública oficial do ViaCEP (Paraná e Brasil) e base local enriquecida offline, reconhecendo nomes com erros parciais ou prefixos (ex.: "rua cecilia meir" -> "Rua Cecília Meireles" em Colombo/PR).
+- Suporte Dinâmico a Temas Claro e Escuro (sade-theme.js): Detecta automaticamente as cores e variáveis do SADE hospedeiro e adapta o popup na tela.
+- Navegação Rápida por Teclado: Setas (↑ e ↓) navegam pelas opções, Enter aplica a sugestão ao campo e Esc fecha o popup.
+- Opção Desfazer Imediata: Ao clicar em [Usar], a sugestão é preenchida no campo do SADE e o popup exibe um feedback com botão [Desfazer] para reversão rápida.
+- Zero vazamento de dados: Nenhuma ocorrência ou dado pessoal é transmitido; a consulta externa de logradouros é sanitizada previamente.
+
