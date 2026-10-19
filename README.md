@@ -11,11 +11,11 @@
 
 ## ⬇️ Download
 
-**[⬇ Baixar última versão publicada (ZIP)](https://github.com/RicckMatth/relato-190-essencial/releases/latest/download/relato-190-essencial.zip)**
+**[⬇ Baixar versão mais recente — v5.9.3 (ZIP)](https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip)**
 
-> A última release publicada, conferida em 19/10/2026, é a **v5.6.3**, de **15/10/2026**. Os botões de download apontam para o arquivo da última release; futuras releases devem manter o nome `relato-190-essencial.zip` para preservar esse link. [Ver notas da última release](https://github.com/RicckMatth/relato-190-essencial/releases/latest).
+> O download principal contém o código mais recente da branch `master`, atualmente **v5.9.3**, com seletores de campos definidos no código e reconhecimento automático do SADE. Campos não reconhecidos ou ambíguos ainda podem exigir confirmação ou vinculação manual.
 
-**Código mais recente:** a branch `master` contém a **v5.9.3**, ainda sem release publicada. Para obter essas alterações, use **[Baixar código da master (ZIP)](https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip)**. As funcionalidades e o histórico abaixo também descrevem alterações da `master`, que podem não estar presentes na release.
+**Release formal no GitHub:** a última release publicada, conferida em 19/10/2026, é a **v5.6.3**, de 15/10/2026. Ela não inclui o adaptador de reconhecimento automático do SADE presente na `master`; apenas reutiliza vínculos e perfis previamente salvos. [Consultar release anterior](https://github.com/RicckMatth/relato-190-essencial/releases/tag/v5.6.3).
 
 ---
 
@@ -42,8 +42,8 @@
 
 ### Método 1 — Download direto (recomendado)
 
-1. **[Baixe o arquivo ZIP da última release](https://github.com/RicckMatth/relato-190-essencial/releases/latest/download/relato-190-essencial.zip)**
-2. Extraia o ZIP em uma pasta. Se você optar pelo código da `master`, a pasta normalmente se chamará `relato-190-essencial-master`.
+1. **[Baixe a versão mais recente com reconhecimento automático (ZIP)](https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip)**
+2. Extraia o ZIP. A pasta normalmente se chamará `relato-190-essencial-master`.
 3. Abra o Chrome e acesse `chrome://extensions`
 4. Ative o **Modo do desenvolvedor** (canto superior direito)
 5. Clique em **"Carregar sem compactação"**
@@ -63,8 +63,8 @@ Depois siga os passos 3–6 acima, selecionando a pasta clonada.
 
 1. **Abra o Chrome** e navegue até a tela de atendimento do sistema
 2. **Clique no ícone** da extensão na barra do Chrome
-3. Acesse **Configurações (⚙)** e clique em **"Vincular todos os campos (assistente)"**
-4. Clique em cada campo do formulário conforme solicitado
+3. No SADE, aguarde o reconhecimento automático dos campos e confira o status nas **Configurações (⚙)**.
+4. Se algum campo não for reconhecido ou precisar de confirmação, confirme o campo indicado ou use **"Vincular todos os campos (assistente)"** para selecionar os campos manualmente.
 5. Volte ao painel principal — os dados serão copiados e inseridos com um clique
 
 ### Endereço inteligente
