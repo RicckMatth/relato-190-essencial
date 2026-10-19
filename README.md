@@ -2,7 +2,8 @@
 
 > Extensão para Google Chrome que agiliza atendimentos do **190** com cópia em um clique, integração com Google Maps, conferência inteligente de endereços e sugestões por CEP.
 
-[![Versão](https://img.shields.io/badge/versão-5.9.3-0a7a6e?style=flat-square)](https://github.com/RicckMatth/relato-190-essencial/tree/master)
+[![Última release](https://img.shields.io/github/v/release/RicckMatth/relato-190-essencial?style=flat-square&label=release)](https://github.com/RicckMatth/relato-190-essencial/releases/latest)
+[![Código master](https://img.shields.io/badge/master-5.9.3-0a7a6e?style=flat-square)](https://github.com/RicckMatth/relato-190-essencial/tree/master)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square&logo=google-chrome)](https://developer.chrome.com/docs/extensions/mv3/)
 [![Licença](https://img.shields.io/badge/licença-MIT-green?style=flat-square)](LICENSE)
 
@@ -10,9 +11,11 @@
 
 ## ⬇️ Download
 
-**[⬇ Baixar última versão (ZIP)](https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip)**
+**[⬇ Baixar última versão publicada (ZIP)](https://github.com/RicckMatth/relato-190-essencial/releases/latest/download/relato-190-essencial.zip)**
 
-> O link baixa a versão mais recente do código na branch `master` (atualmente **v5.9.3**), não o release antigo v5.6.3. Após baixar, siga as instruções de instalação abaixo.
+> A última release publicada, conferida em 19/10/2026, é a **v5.6.3**, de **15/10/2026**. Os botões de download apontam para o arquivo da última release; futuras releases devem manter o nome `relato-190-essencial.zip` para preservar esse link. [Ver notas da última release](https://github.com/RicckMatth/relato-190-essencial/releases/latest).
+
+**Código mais recente:** a branch `master` contém a **v5.9.3**, ainda sem release publicada. Para obter essas alterações, use **[Baixar código da master (ZIP)](https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip)**. As funcionalidades e o histórico abaixo também descrevem alterações da `master`, que podem não estar presentes na release.
 
 ---
 
@@ -39,8 +42,8 @@
 
 ### Método 1 — Download direto (recomendado)
 
-1. **[Baixe o arquivo ZIP](https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip)**
-2. Extraia o ZIP. A pasta normalmente se chamará `relato-190-essencial-master`.
+1. **[Baixe o arquivo ZIP da última release](https://github.com/RicckMatth/relato-190-essencial/releases/latest/download/relato-190-essencial.zip)**
+2. Extraia o ZIP em uma pasta. Se você optar pelo código da `master`, a pasta normalmente se chamará `relato-190-essencial-master`.
 3. Abra o Chrome e acesse `chrome://extensions`
 4. Ative o **Modo do desenvolvedor** (canto superior direito)
 5. Clique em **"Carregar sem compactação"**
@@ -91,12 +94,12 @@ Depois siga os passos 3–6 acima, selecionando a pasta clonada.
 - Corrige a validação da chave de API Gemini: agora aceita o formato antigo `AIza...` e o novo formato de autenticação `AQ....` criado pelo Google AI Studio. Não depende do prefixo para declarar validade.
 - Botão **Testar conexão** em Configurações → Gemini: envia somente uma frase fictícia ao modelo (nunca dados de atendimento) e informa se o Google respondeu.
 - Diferencia falhas de autenticação (401), permissão (403), modelo (404) e cota (429). Salvar a chave não comprova a autenticação.
-- **Download da última versão:** https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip
+- **Download do código da master (inclui v5.9.3):** https://github.com/RicckMatth/relato-190-essencial/archive/refs/heads/master.zip
 - Credenciais nunca devem ser copiadas para o repositório ou registradas no console. Se foram divulgadas, revogue-as e gere novas.
 
 
 
-### v5.7.0 (atual)
+### v5.7.0
 - **Reconhecimento automático do SADE**: adaptador `sade-adapter.js` com heurísticas de alta precisão para os 9 campos de atendimento: Nome, Telefone, Município, Rua, Número, Bairro, Complemento, Relato (texto principal) e CEP
 - Suporte nativo à arquitetura do SADE com **iframes dinâmicos** (`#iframeContainer` e `iframe[name="container"]`), `contentDocument` e `MutationObserver` para alterações assíncronas via jQuery/AJAX
 - **Precedência estrita de vínculos**: (1) Mapeamento nativo SADE validado -> (2) Perfil salvo compatível -> (3) Assistente manual
