@@ -77,7 +77,7 @@
     const apiKey=await unseal(d,'gemini'),controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),30000);
     try{
-     const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{
+     const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{
       method:'POST',headers:{'x-goog-api-key':apiKey,'Content-Type':'application/json'},
       credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal,
       body:JSON.stringify({systemInstruction:{parts:[{text:'Revise o relato em português somente quanto a ortografia, pontuação, clareza e organização. Preserve integralmente fatos, pessoas, locais, horários, incertezas e negativas. Não acrescente nem remova informações. Retorne só o texto revisado.'}]},contents:[{role:'user',parts:[{text:input}]}],generationConfig:{temperature:0.1,maxOutputTokens:4096}})

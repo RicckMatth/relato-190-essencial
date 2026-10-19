@@ -381,6 +381,7 @@
   }
   function selectWizardStep(){
     if(!wizard)return;
+    while(wizardIndex<order.length&&findFieldElement(order[wizardIndex]))wizardIndex++;
     if(wizardIndex>=order.length){
       wizard=false;stopSelecting();render();show('Assistente finalizado. Vínculos salvos neste site.');return;
     }
@@ -444,6 +445,8 @@
     return null;
   }
   function findFieldElement(key){
+    const exact=automaticFieldElement(key);
+    if(exact)return exact;
     const el=boundElement(key);
     if(el)return el;
     const selectors={
@@ -462,6 +465,44 @@
       }
     }
     return null;
+  }
+  function automaticFieldElement(key){
+    const selector=automaticSelectors[key];
+    if(!selector)return null;
+    const matches=[];
+    for(const doc of bindings.documents(document)){
+      try{
+        for(const target of doc.querySelectorAll(selector)){
+          const controls=[...target.querySelectorAll('input,textarea,select,[contenteditable="true"],[contenteditable="plaintext-only"]')];
+          matches.push(controls.length===1?bindings.control(controls[0]):bindings.control(target));
+        }
+      }catch(_){}
+    }
+    return matches.length===1?matches[0]:null;
+  }
+  const automaticSelectors={
+    nome:'#NOME',
+    telefone:'#TELEFONE',
+    cidade:'#municipio_endereco',
+    rua:'#pesquisa_endereco',
+    numero:'#_ID_DIV',
+    bairro:'#pesquisa_bairro',
+    complemento:'#topo_mapa > div:nth-child(7) > div',
+    relato:'#collapseFive > div > div:nth-child(1) > div'
+  };
+  function autoBindFields(){
+    let changed=false;
+    for(const key of Object.keys(automaticSelectors)){
+      const el=findFieldElement(key);
+      if(!el)continue;
+      try{
+        const description=bindings.describe(el,document);
+        if(JSON.stringify(cfg.fields[key])!==JSON.stringify(description)){
+          cfg.fields[key]=description;changed=true;
+        }
+      }catch(_){}
+    }
+    return changed;
   }
   function handleFieldSuggestion(key,target){
     if(!target||!addressPopup)return;
@@ -619,7 +660,7 @@
     for(const key of [...order,'cep']){
       const row=panel.querySelector(`[data-key="${key}"]`);const status=row.querySelector('.state');
       const btn=row.querySelector('.link'),clear=row.querySelector('.clear');
-      const has=!!cfg.fields[key],found=has&&!!boundElement(key);
+      const has=!!cfg.fields[key],found=!!(findFieldElement(key)||has&&boundElement(key));
       // Determinar fonte do vínculo para o indicador visual
       const sadeInfo=sadeState?.fields?.[key];
       const isAutoSade=has&&sadeBindings[key]&&sadeInfo?.mode==='auto';
@@ -629,8 +670,9 @@
       else if(isConfirmSade)statusText='Aguarda confirmação';
       status.textContent=statusText;
       status.className='state'+(found?' ok':has?' missing':isConfirmSade?' missing':'');
-      btn.textContent=has?'Alterar':'Vincular';clear.style.visibility=has?'visible':'hidden';
+      btn.textContent=has?'Alterar':'Vincular';btn.hidden=found;clear.style.visibility=has&&!found?'visible':'hidden';
     }
+    $('#wizard').hidden=order.every(key=>!!findFieldElement(key));
     $('#sep').value=cfg.separator==='|'?'|':'-';
     $('#profileAuto').checked=cfg.profileAuto!==false;
     if($('#hereEnabled'))$('#hereEnabled').checked=cfg.hereEnabled!==false;
@@ -1059,7 +1101,7 @@
       persist();
     });
   }
-  let animationPending=false, frameScanPending=false;
+  let animationPending=false, frameScanPending=false, selectorScanPending=false;
   function scheduleToolbarUpdate(){
     if(animationPending)return;
     animationPending=true;
@@ -1075,6 +1117,14 @@
     // Atualiza o botão somente uma vez por frame, mesmo em páginas reativas.
     const observer=new MutationObserver(records=>{
       scheduleToolbarUpdate();
+      const elementAdded=records.some(record=>[...record.addedNodes].some(node=>node.nodeType===1));
+      if(elementAdded&&!selectorScanPending){
+        selectorScanPending=true;
+        setTimeout(()=>{
+          selectorScanPending=false;
+          if(autoBindFields()){render();persist();}
+        },250);
+      }
       if(frameScanPending)return;
       const frameAdded=records.some(record=>[...record.addedNodes].some(node=>
         node.nodeType===1&&(node.matches?.('iframe,frame')||node.querySelector?.('iframe,frame'))
@@ -1206,7 +1256,7 @@
   }
   // ── Inicialização ─────────────────────────────────────────────────────────
   async function init(){
-    render();observeDocs();
+    let autoChanged=autoBindFields();render();observeDocs();
     try{
       const saved=await Promise.race([
         bindings.remote('load'),
@@ -1214,13 +1264,14 @@
       ]);
       if(saved){
         cfg=saved;cfg.fields={...saved.fields};
+        autoChanged=autoBindFields()||autoChanged;
         if(hereService){
           if(cfg.hereApiKey)hereService.apiKey=cfg.hereApiKey;
           if(typeof cfg.hereUseMock==='boolean')hereService.useMock=cfg.hereUseMock;
         }
       }
     }catch(err){if(err.message!=='timeout')show('Não foi possível carregar vínculos: '+err.message);}
-    render();await loadProfiles();
+    render();if(autoChanged)await persist();await loadProfiles();
     initSadeIntegration();
     setInterval(()=>{if(mapsActive||lookupAllowed)checkAddressChanges();},1600);
     try{const active=await mapsMessage('RELATO_MAPS_STATUS');if(active.connected){mapsActive=!mapsManualPause;mapsStatus('Aba do Google Maps conectada. Endereço acompanhado automaticamente.',true);scheduleMapsSync(true);}}catch(_){}
